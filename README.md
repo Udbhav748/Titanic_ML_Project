@@ -5,7 +5,7 @@ End-to-end ML project on the Titanic dataset: EDA, a trained model, a Streamlit 
 ## Project structure
 
 ```
-Titanic-End-to-End/
+Titanic_ML_Project/
 ├── data/train.csv
 ├── notebooks/Udbhav_Statistical_Analysis.ipynb
 ├── dashboard/
@@ -70,8 +70,8 @@ Full analysis is in `notebooks/Udbhav_Statistical_Analysis.ipynb`.
 Clone and install:
 
 ```bash
-git clone <your-repo-url>
-cd Titanic-End-to-End
+git clone https://github.com/Udbhav748/Titanic_ML_Project.git
+cd Titanic_ML_Project
 python -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
