@@ -8,6 +8,12 @@ An end-to-end machine learning project: statistical analysis, an interactive das
 
 ---
 
+## Tech Stack
+
+Python · pandas · scikit-learn · SciPy · Streamlit · Plotly · FastAPI · Pydantic · Docker · AWS EC2
+
+---
+
 ## Phase 1 — Statistical Analysis (EDA)
 
 - **Dataset (891 passengers, 12 columns)**: Big enough to find real patterns, but small enough that unusual cases still matter.
@@ -111,12 +117,6 @@ Saved as a single `model.pkl` via `joblib`.
 ## Key Techniques Used
 
 `Missing value imputation` · `Log transformation` · `IQR outlier detection` · `Hypothesis testing (t-test, Levene's)` · `Correlation analysis` · `Feature engineering` · `One-hot encoding` · `sklearn Pipeline` · `Stratified split` · `Cross-validation` · `RandomizedSearchCV` · `Class imbalance handling` · `REST API design` · `Data validation (Pydantic)` · `Containerization (Docker)` · `Cloud deployment (EC2)` · `Version control (Git/GitHub)`
-
----
-
-## Tech Stack
-
-Python · pandas · scikit-learn · SciPy · Streamlit · Plotly · FastAPI · Pydantic · Docker · AWS EC2
 
 ---
 
