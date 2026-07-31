@@ -86,31 +86,82 @@ Saved as a single `model.pkl` via `joblib`.
 
 ## Phase 5 — Docker
 
-- `python:3.11-slim` base image
-- Dependencies installed **before** code copied → faster rebuilds via layer caching
-- Slimmer `requirements-api.txt` (API-only deps) instead of full dev requirements → smaller image (712MB)
-- Runs as a **non-root user** for security
-- Bound to `0.0.0.0:8000` (not `127.0.0.1`) so it's reachable externally
-- Tested via `curl` and Python `requests`
+I packaged my API using Docker so it runs the same way on any machine.
+
+- Started from a lightweight `python:3.11-slim` base image
+- Installed dependencies before copying my code, so rebuilds are faster (Docker reuses cached layers)
+- Used a separate, slimmer `requirements-api.txt` with only API-specific packages, instead of my full dev requirements — kept the image small (712MB)
+- Ran the container as a non-root user, for security
+- Made sure it's reachable from outside the container by binding to `0.0.0.0:8000`, not `127.0.0.1`
+- Tested it using curl and Python's requests library
+
+**Basic commands I used:**
+
+```bash
+docker build -t titanic-api .                                        # build the image
+docker run -d -p 8000:8000 --name titanic-api-container titanic-api  # run it as a container
+docker ps                                                             # check it's running
+docker logs titanic-api-container --tail 30                          # view its logs
+docker rm -f titanic-api-container                                   # remove it, to rebuild fresh
+```
 
 ---
 
 ## Phase 6 — GitHub
 
-- Full project pushed with proper structure, README, and `requirements.txt`
-- Used **branches + pull requests** for larger changes (not direct edits to `main`)
-- Fixed a real bug: a **stale git remote** pointing to an old repo — caught via `git remote -v`
+I used Git and GitHub to save my project properly and track every change.
+
+- Pushed the full project with a clean structure, README, and requirements file
+- For bigger changes, I used branches and pull requests instead of editing my main project directly
+- Found and fixed a real bug — my git remote was pointing to an old repository — caught it using `git remote -v`
+
+**Basic commands I used:**
+
+```bash
+git init                          # start tracking my project with Git
+git status                        # check what's changed
+git add .                         # stage my files
+git commit -m "message"           # save a snapshot with a note
+git push                          # send my changes to GitHub
+git remote -v                     # check which repo I'm connected to
+git pull origin main              # get the latest code from GitHub
+git checkout -b branch-name       # create and switch to a new branch
+```
 
 ---
 
 ## Phase 7 — AWS EC2 Deployment (Stretch Goal)
 
-- Launched a free-tier-eligible **t3.micro** Ubuntu instance (eu-north-1)
-- Key pair (`.pem`) for SSH — no passwords
-- **Security group** opened for ports 22 (SSH), 8000 (API), 8501 (dashboard)
-- Installed Docker on the instance, cloned the repo from GitHub
-- **API** runs containerized (Docker); **Dashboard** runs directly in a Python venv via `nohup` — a deliberate architecture choice (always-on service vs. on-demand tool)
-- Verified both live from an external browser, not just internally on the server
+I deployed my project to a live cloud server so it's not just running on my own laptop.
+
+- Launched a free-tier `t3.micro` Ubuntu instance
+- Created a key pair file for secure SSH login, no passwords needed
+- Opened a firewall rule (security group) for ports 22, 8000, and 8501
+- Installed Docker on the server, and cloned my project from GitHub
+- Ran the API inside Docker, and ran the dashboard directly on the server using a Python virtual environment with `nohup`, so it keeps running after I disconnect
+- Confirmed both were genuinely live by opening them in my own browser, from my own computer, not just checking inside the server
+
+**Basic commands I used:**
+
+```bash
+ssh -i "titanic-key.pem" ubuntu@<my-instance-address>   # connect to my server
+sudo apt update && sudo apt install -y docker.io        # install Docker
+git clone <my-repo-url>                                 # copy my project onto the server
+docker build -t titanic-api .                           # same build command as locally
+docker run -d -p 8000:8000 --name titanic-api-container titanic-api
+```
+
+---
+
+## Screenshots
+
+| Dashboard | Analysis |
+|---|---|
+| ![Dashboard](images/dashboard.png) | ![Analysis](images/analysis.png) |
+
+| Prediction | FastAPI Docs |
+|---|---|
+| ![Prediction](images/prediction.png) | ![FastAPI Docs](images/fastapi_docs.png) |
 
 ---
 
