@@ -68,13 +68,13 @@ Saved the result as `data/train_transformed.csv`. Summary of what changed vs. th
 
 ![Model comparison](images/model_comparison.png)
 
-| Model | Mean CV Accuracy | Mean CV F1-score |
-|---|---|---|
-| Logistic Regression | 0.825 | 0.767 |
-| Random Forest | 0.823 | 0.767 |
-| Gradient Boosting | 0.820 | 0.749 |
+| Model | Accuracy | Precision | Recall | F1-score | ROC-AUC |
+|---|---|---|---|---|---|
+| Logistic Regression | 0.825 | 0.781 | 0.754 | 0.767 | 0.869 |
+| Random Forest | 0.823 | 0.772 | 0.766 | 0.767 | 0.867 |
+| Gradient Boosting | 0.820 | 0.800 | 0.707 | 0.749 | 0.876 |
 
-Accuracy was nearly identical across all three, but Random Forest and Logistic Regression edged out Gradient Boosting on F1 — and Random Forest won that tiebreak, which is why it was selected.
+*(All values are 5-fold CV means on the training set.)* Accuracy was nearly identical across all three. Gradient Boosting had the best precision and ROC-AUC, but its recall was noticeably weaker — it misses more real survivors. Random Forest and Logistic Regression tied on F1, and Random Forest won that tiebreak, which is why it was selected.
 
 **Tuning:**
 - Used `RandomizedSearchCV` to automatically find better settings, instead of guessing fixed numbers
