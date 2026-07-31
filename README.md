@@ -10,19 +10,6 @@ An end-to-end machine learning project: statistical analysis, an interactive das
 
 ## Phase 1 — Statistical Analysis (EDA)
 
-- Loaded and inspected 891 passengers, 12 columns; found missing data in `Age` (~20%), `Cabin` (~77%), `Embarked` (2 rows)
-- **Univariate analysis:** histograms + skewness per column
-  - `Fare` highly skewed → log-transformed
-  - `Age` roughly symmetric → median imputation
-- **Outlier detection:** boxplots + IQR rule
-  - Retained all outliers — real passengers (e.g. genuine 1st-class fares), not errors
-- **Bivariate analysis:** correlation heatmap + survival rate by Sex, Class, Embarked, Age Group
-  - Caught a **confounding variable**: Embarked's apparent effect was really just Pclass composition at that port
-- **Hypothesis testing:** two-sample t-test (Welch's, after checking variance with Levene's test) — survivors paid significantly more fare (**p < 0.001**)
-- Summarized into plain-English business insights
-
-**Interpretation:**
-
 - **Dataset (891 passengers, 12 columns)**: Big enough to find real patterns, but small enough that unusual cases still matter.
 - **Missing data**: Age had some missing values, so I filled them with the middle value. Cabin had too many missing values to fill, but the missing data itself was useful. Embarked had only 2 missing values, so I filled them with the most common port.
 - **Fare**: Most people paid low fares, while a few paid very high fares, so I used a log transform to make the data more balanced.
