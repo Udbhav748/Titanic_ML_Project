@@ -61,6 +61,14 @@ My goal was to predict whether a passenger survived, using a proper, defensible 
 
 ![Model comparison](images/model_comparison.png)
 
+| Model | Mean CV Accuracy | Mean CV F1-score |
+|---|---|---|
+| Logistic Regression | 0.825 | 0.767 |
+| Random Forest | 0.823 | 0.767 |
+| Gradient Boosting | 0.820 | 0.749 |
+
+Accuracy was nearly identical across all three, but Random Forest and Logistic Regression edged out Gradient Boosting on F1 — and Random Forest won that tiebreak, which is why it was selected.
+
 **Tuning:**
 - Used `RandomizedSearchCV` to automatically find better settings, instead of guessing fixed numbers
 
