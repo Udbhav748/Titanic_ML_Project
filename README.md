@@ -76,11 +76,13 @@ Saved as a single `model.pkl` via `joblib`.
 
 ## Phase 4 — FastAPI Service
 
-- Built a `PassengerInput` **Pydantic schema** — typed, constrained fields; invalid input auto-rejected (422)
-- **Endpoints:** `/health` (service + model status) and `/predict` (returns prediction + probability)
-- Model loaded once at startup, not per-request
-- Global exception handling — no raw errors leaked to callers
-- Verified through auto-generated **Swagger UI** (`/docs`)
+I wrapped my trained model in a FastAPI service so it can be used outside the notebook, by any program.
+
+- Built a `PassengerInput` Pydantic schema — defines exactly what valid input looks like; bad or missing data is automatically rejected (422 error)
+- Two endpoints: `/health` (checks the service and model are working) and `/predict` (returns a survival prediction with probability)
+- Model loaded once when the API starts, not on every request — keeps things fast
+- Added global exception handling, so no raw errors are ever leaked back to whoever calls the API
+- Tested everything through the auto-generated Swagger UI at `/docs`, sending real requests and confirming correct responses
 
 ---
 
