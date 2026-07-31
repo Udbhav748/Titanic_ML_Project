@@ -59,6 +59,8 @@ My goal was to predict whether a passenger survived, using a proper, defensible 
 - Compared 3 models — Logistic Regression, Random Forest, and Gradient Boosting — using 5-fold cross-validation
 - Random Forest performed best, so I selected it
 
+![Model comparison](images/model_comparison.png)
+
 **Tuning:**
 - Used `RandomizedSearchCV` to automatically find better settings, instead of guessing fixed numbers
 
