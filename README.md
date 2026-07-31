@@ -53,7 +53,7 @@ Saved the result as `data/train_transformed.csv`. Summary of what changed vs. th
 - Dropped `Cabin`, added `HasCabin` flag — 77% missing, but *whether* it's missing still carries signal
 - Added `Title` (from `Name`) — packs in age/sex/status; also rare titles merged
 - Added `FamilySize` and `IsAlone` (from `SibSp` + `Parch`) — solo travelers and large families both survived less
-- Filled 177 missing `Age` values using the median age per `Title` group, not one global median — avoids assigning adult ages to children (e.g. "Master")
+- 177 people had no `Age` listed. Instead of guessing one age for everyone, I used the typical age for their `Title` (like Mr, Mrs, Master) — so a young boy ("Master") doesn't end up with an adult's age
 
 **Preprocessing:**
 - Filled missing values — median for numeric columns, most frequent for categorical
