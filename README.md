@@ -1,71 +1,55 @@
-# Titanic Survival Prediction
+# Titanic Survival Prediction — End-to-End ML Project
 
-End-to-end machine learning project on the classic [Titanic dataset](https://www.kaggle.com/c/titanic/data) — from raw data to a deployed prediction service. It covers exploratory data analysis with formal hypothesis testing, a tuned Random Forest classifier, an interactive Streamlit dashboard, and a FastAPI service containerized with Docker. Built to demonstrate a complete, production-style ML workflow rather than just a notebook.
+An end-to-end machine learning project: statistical analysis, an interactive dashboard, a tuned classifier, a live API, and a cloud deployment — all built around one dataset, one connected pipeline.
 
-## Table of Contents
+**Live Demo:**
+- API Docs: `http://13.51.85.67:8000/docs`
+- Dashboard: `http://13.51.85.67:8501`
 
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Results](#results)
-- [Screenshots](#screenshots)
-- [Getting Started](#getting-started)
-- [Docker](#docker)
-- [Possible Improvements](#possible-improvements)
-- [License](#license)
+---
 
-## Features
+## Phase 1 — Statistical Analysis (EDA)
 
-- **EDA notebook** with formal hypothesis testing (Welch's t-test on fare vs. survival, ANOVA, chi-square, Cramer's V)
-- **Interactive dashboard** (Streamlit, 3 pages):
-  - **Overview** — KPIs and headline charts
-  - **Analysis** — full statistical write-up, computed live: outlier boxplots, correlation heatmap, bivariate breakdowns
-  - **Prediction** — single-passenger prediction form
-- **Random Forest classifier**, tuned with `RandomizedSearchCV`, outperforming Logistic Regression and Gradient Boosting in 5-fold cross-validation, wrapped in a single scikit-learn pipeline
-- **Feature engineering**: title extraction, family size, "has cabin" flag
-- **FastAPI service** exposing `/predict` and `/health` (root path redirects to `/docs`)
-- **Dockerized API** — slim image built from API-only dependencies (~712MB)
+- Loaded and inspected 891 passengers, 12 columns; found missing data in `Age` (~20%), `Cabin` (~77%), `Embarked` (2 rows)
+- **Univariate analysis:** histograms + skewness per column
+  - `Fare` highly skewed → log-transformed
+  - `Age` roughly symmetric → median imputation
+- **Outlier detection:** boxplots + IQR rule
+  - Retained all outliers — real passengers (e.g. genuine 1st-class fares), not errors
+- **Bivariate analysis:** correlation heatmap + survival rate by Sex, Class, Embarked, Age Group
+  - Caught a **confounding variable**: Embarked's apparent effect was really just Pclass composition at that port
+- **Hypothesis testing:** two-sample t-test (Welch's, after checking variance with Levene's test) — survivors paid significantly more fare (**p < 0.001**)
+- Summarized into plain-English business insights
 
-## Tech Stack
+---
 
-| Layer | Tools |
-|---|---|
-| Data & Modeling | Python, pandas, NumPy, scikit-learn, SciPy |
-| Dashboard | Streamlit, Plotly |
-| API | FastAPI, Pydantic, Uvicorn |
-| Deployment | Docker |
+## Phase 2 — Interactive Dashboard (Streamlit)
 
-## Project Structure
+- Converted top insights into a live, filterable dashboard
+- **KPI row:** total passengers, survival rate, avg fare by outcome
+- **1 filter:** Passenger Class (selectbox) — chosen since it had the clearest effect on survival
+- **3 Plotly charts:** survival by Sex, by Age Group, and a Fare comparison — each with a plain-English insight caption
+- Later expanded into **3 pages**: Overview, full live Analysis, and a Prediction page (loads the same `model.pkl` as the API)
 
-```
-Titanic_ML_Project/
-├── data/train.csv
-├── notebooks/Udbhav_Statistical_Analysis.ipynb
-├── dashboard/
-│   ├── Overview.py
-│   └── pages/
-│       ├── 1_Analysis.py   # notebook write-up
-│       └── 2_Prediction.py # single-passenger prediction
-├── model/
-│   ├── train.py
-│   ├── evaluate.py
-│   └── model.pkl
-├── api/
-│   ├── main.py
-│   └── schemas.py
-├── images/
-├── Dockerfile
-├── requirements.txt      # full dev environment (dashboard + API + notebook)
-└── requirements-api.txt  # slim deps for the Docker image (API only)
-```
+---
 
-## Results
+## Phase 3 — Machine Learning Model
 
-Random Forest (`class_weight="balanced"`, tuned via `RandomizedSearchCV`) was selected over Logistic Regression and Gradient Boosting — mean F1 0.7711 vs. 0.7591 vs. 0.7493 in cross-validation.
+**Feature engineering:**
+- `Title` extracted from `Name` (Mr/Mrs/Miss/Master) → also improved Age imputation (median per title group)
+- `FamilySize`, `IsAlone`
+- `HasCabin` binary flag from the sparse `Cabin` column
 
-**Test set performance** (179 held-out passengers):
+**Modeling approach:**
+- Single `sklearn.Pipeline` — preprocessing + model bundled as one artifact (prevents train/serve mismatch)
+- Stratified 80/20 train/test split
+- Compared **3 models** via 5-fold CV: Logistic Regression, Random Forest, Gradient Boosting → **Random Forest selected**
+- Tuned with **RandomizedSearchCV** instead of guessed hyperparameters
+- Diagnosed a precision/recall imbalance → fixed with **`class_weight="balanced"`**
 
-| Metric | Value |
+**Final results (test set):**
+
+| Metric | Score |
 |---|---|
 | Accuracy | 80.5% |
 | Precision | 0.72 |
@@ -73,90 +57,106 @@ Random Forest (`class_weight="balanced"`, tuned via `RandomizedSearchCV`) was se
 | F1-score | 0.7586 |
 | ROC-AUC | 0.8526 |
 
-**Confusion matrix:**
+Confusion matrix:
 
 |  | Predicted: No | Predicted: Yes |
 |---|---|---|
 | Actual: No | 89 | 21 |
 | Actual: Yes | 14 | 55 |
 
-Full statistical write-up is in `notebooks/Udbhav_Statistical_Analysis.ipynb`, also reproduced live on the dashboard's **Analysis** page.
+Saved as a single `model.pkl` via `joblib`.
 
-## Screenshots
+---
 
-| Dashboard | Analysis |
-|---|---|
-| ![Dashboard](images/dashboard.png) | ![Analysis](images/analysis.png) |
+## Phase 4 — FastAPI Service
 
-| Prediction | FastAPI Docs |
-|---|---|
-| ![Prediction](images/prediction.png) | ![FastAPI Docs](images/fastapi_docs.png) |
+- Built a `PassengerInput` **Pydantic schema** — typed, constrained fields; invalid input auto-rejected (422)
+- **Endpoints:** `/health` (service + model status) and `/predict` (returns prediction + probability)
+- Model loaded once at startup, not per-request
+- Global exception handling — no raw errors leaked to callers
+- Verified through auto-generated **Swagger UI** (`/docs`)
 
-## Getting Started
+---
 
-**1. Clone and install:**
+## Phase 5 — Docker
 
-```bash
-git clone https://github.com/Udbhav748/Titanic_ML_Project.git
-cd Titanic_ML_Project
-python -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+- `python:3.11-slim` base image
+- Dependencies installed **before** code copied → faster rebuilds via layer caching
+- Slimmer `requirements-api.txt` (API-only deps) instead of full dev requirements → smaller image (712MB)
+- Runs as a **non-root user** for security
+- Bound to `0.0.0.0:8000` (not `127.0.0.1`) so it's reachable externally
+- Tested via `curl` and Python `requests`
+
+---
+
+## Phase 6 — GitHub
+
+- Full project pushed with proper structure, README, and `requirements.txt`
+- Used **branches + pull requests** for larger changes (not direct edits to `main`)
+- Fixed a real bug: a **stale git remote** pointing to an old repo — caught via `git remote -v`
+
+---
+
+## Phase 7 — AWS EC2 Deployment (Stretch Goal)
+
+- Launched a free-tier-eligible **t3.micro** Ubuntu instance (eu-north-1)
+- Key pair (`.pem`) for SSH — no passwords
+- **Security group** opened for ports 22 (SSH), 8000 (API), 8501 (dashboard)
+- Installed Docker on the instance, cloned the repo from GitHub
+- **API** runs containerized (Docker); **Dashboard** runs directly in a Python venv via `nohup` — a deliberate architecture choice (always-on service vs. on-demand tool)
+- Verified both live from an external browser, not just internally on the server
+
+---
+
+## Key Techniques Used
+
+`Missing value imputation` · `Log transformation` · `IQR outlier detection` · `Hypothesis testing (t-test, Levene's)` · `Correlation analysis` · `Feature engineering` · `One-hot encoding` · `sklearn Pipeline` · `Stratified split` · `Cross-validation` · `RandomizedSearchCV` · `Class imbalance handling` · `REST API design` · `Data validation (Pydantic)` · `Containerization (Docker)` · `Cloud deployment (EC2)` · `Version control (Git/GitHub)`
+
+---
+
+## Tech Stack
+
+Python · pandas · scikit-learn · SciPy · Streamlit · Plotly · FastAPI · Pydantic · Docker · AWS EC2
+
+---
+
+## Project Structure
+
+```
+Titanic-End-to-End/
+├── data/train.csv
+├── notebooks/Udbhav_Statistical_Analysis.ipynb
+├── dashboard/
+│   ├── Overview.py
+│   └── pages/1_Analysis.py, 2_Prediction.py
+├── model/train.py, model.pkl
+├── api/main.py, schemas.py
+├── Dockerfile
+├── requirements.txt, requirements-api.txt
+└── README.md
 ```
 
-**2. Run the dashboard** (Overview, Analysis, and Prediction pages are in the sidebar):
+---
+
+## How to Run
 
 ```bash
-streamlit run dashboard/Overview.py
-```
-
-**3. Train the model** (optional — `model.pkl` is already included):
-
-```bash
-python model/train.py
-```
-
-**4. Run the API:**
-
-```bash
+# Local — API
 uvicorn api.main:app --reload
-```
 
-Docs available at `http://127.0.0.1:8000/docs`.
+# Local — Dashboard
+streamlit run dashboard/Overview.py
 
-## Docker
-
-Build and run the API as a container:
-
-```bash
+# Docker
 docker build -t titanic-api .
 docker run -d -p 8000:8000 --name titanic-api-container titanic-api
 ```
 
-Test it:
+---
 
-```bash
-curl -X POST "http://localhost:8000/predict" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "pclass": 1,
-    "sex": "female",
-    "age": 29.0,
-    "sibsp": 0,
-    "parch": 0,
-    "fare": 100.0,
-    "embarked": "C",
-    "has_cabin": true,
-    "title": "Mrs"
-  }'
-```
+## Future Improvements
 
-## Possible Improvements
-
-- Try XGBoost/LightGBM (currently comparing against scikit-learn's `GradientBoostingClassifier`)
-- Add tests for the API and preprocessing pipeline
-- Set up CI/CD and a cloud-hosted deployment
-
-## License
-
-Built for academic evaluation.
+- Try XGBoost / LightGBM
+- Automated tests for API and pipeline
+- CI/CD pipeline
+- Elastic IP + systemd/restart policies for full reboot persistence
