@@ -21,6 +21,19 @@ An end-to-end machine learning project: statistical analysis, an interactive das
 - **Hypothesis testing:** two-sample t-test (Welch's, after checking variance with Levene's test) — survivors paid significantly more fare (**p < 0.001**)
 - Summarized into plain-English business insights
 
+**Interpretation:**
+
+- **Dataset (891 passengers, 12 columns)**: Big enough to find real patterns, but small enough that unusual cases still matter.
+- **Missing data**: Age had some missing values, so I filled them with the middle value. Cabin had too many missing values to fill, but the missing data itself was useful. Embarked had only 2 missing values, so I filled them with the most common port.
+- **Fare**: Most people paid low fares, while a few paid very high fares, so I used a log transform to make the data more balanced.
+- **Age**: The ages were fairly balanced, so using the median was a good choice.
+- **Outliers**: I kept unusual values because they were real passengers, not mistakes.
+- **Correlation**: It showed expected relationships, like higher-class passengers usually paying higher fares.
+- **Survival rates**: I compared survival percentages for different groups like men vs. women and different passenger classes.
+- **Embarked**: At first, the boarding port seemed important, but it was actually because different ports had different mixes of passenger classes.
+- **Hypothesis test (p < 0.001)**: The fare difference between survivors and non-survivors was almost certainly real, not due to chance.
+- **Welch's t-test**: I used this because the two groups had different levels of variation, making the results more accurate.
+
 ---
 
 ## Phase 2 — Interactive Dashboard (Streamlit)
