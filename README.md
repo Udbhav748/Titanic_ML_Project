@@ -48,6 +48,13 @@ My goal was to predict whether a passenger survived, using a proper, defensible 
 - Created `FamilySize` (SibSp + Parch + 1) and an `IsAlone` flag
 - Converted the mostly-missing `Cabin` column into a simple `HasCabin` yes/no flag instead of dropping it
 
+Saved the result as `data/train_transformed.csv`. Summary of what changed vs. the raw CSV:
+- Dropped `PassengerId`, `Name`, `Ticket` — identifiers/free text with no direct signal
+- Dropped `Cabin`, added `HasCabin` flag — 77% missing, but *whether* it's missing still carries signal
+- Added `Title` (from `Name`) — packs in age/sex/status; also rare titles merged
+- Added `FamilySize` and `IsAlone` (from `SibSp` + `Parch`) — solo travelers and large families both survived less
+- Filled 177 missing `Age` values using the median age per `Title` group, not one global median — avoids assigning adult ages to children (e.g. "Master")
+
 **Preprocessing:**
 - Filled missing values — median for numeric columns, most frequent for categorical
 - One-hot encoded categorical columns (Sex, Embarked, Pclass) so the model can read them
@@ -193,7 +200,7 @@ docker run -d -p 8000:8000 --name titanic-api-container titanic-api
 
 ```
 Titanic-End-to-End/
-├── data/train.csv
+├── data/train.csv, train_transformed.csv
 ├── notebooks/Udbhav_Statistical_Analysis.ipynb
 ├── dashboard/
 │   ├── Overview.py
