@@ -116,12 +116,38 @@ st.markdown("---")
 
 # 3. Outlier Detection
 st.subheader("3. Outlier Detection")
+st.markdown("Boxplots to spot outliers visually, IQR rule to quantify them per column.")
+
+box_col1, box_col2 = st.columns(2)
+with box_col1:
+    fig = px.box(df, y="Age", color_discrete_sequence=[COLOR_PRIMARY], points="outliers")
+    st.plotly_chart(fig, use_container_width=True)
+with box_col2:
+    fig = px.box(df, y="Fare", color_discrete_sequence=[COLOR_ACCENT], points="outliers")
+    st.plotly_chart(fig, use_container_width=True)
+
+box_col3, box_col4 = st.columns(2)
+with box_col3:
+    fig = px.box(df, y="SibSp", color_discrete_sequence=[COLOR_SECONDARY], points="outliers")
+    st.plotly_chart(fig, use_container_width=True)
+with box_col4:
+    fig = px.box(df, y="Parch", color_discrete_sequence=[COLOR_SECONDARY], points="outliers")
+    st.plotly_chart(fig, use_container_width=True)
+
+outlier_notes = {
+    "Age": "Keep, real values",
+    "SibSp": "Keep, bucket instead of removing",
+    "Parch": "Keep, IQR rule overreacts on sparse data (Q1=Q3=0)",
+    "Fare": "Keep, log-transform instead of removing",
+}
 with st.expander("IQR outlier table", expanded=True):
     outlier_table = pd.DataFrame({col: count_outliers_iqr(df[col].dropna()) for col in NUMERIC_COLS}).T
+    outlier_table["Decision"] = [outlier_notes[c] for c in outlier_table.index]
     st.dataframe(outlier_table, use_container_width=True)
     st.caption(
-        "IQR rule flags these, but all are real values, not data errors, so they're kept "
-        "and handled via transforms/bucketing instead of removal."
+        "Survived (binary) and Pclass (ordinal) are excluded, the IQR rule doesn't apply to them. "
+        "Only remove outliers if they look like data errors (e.g. negative age) - all flagged values "
+        "here are real, so they're kept and handled with transforms or bucketing instead of removal."
     )
 
 st.markdown("---")
@@ -167,6 +193,27 @@ st.markdown("---")
 
 # 6. Bivariate Analysis
 st.subheader("6. Bivariate Analysis")
+
+st.markdown("**Correlation heatmap (numeric features, Pearson)**")
+corr_cols = ["Survived", "Pclass", "Age", "SibSp", "Parch", "Fare"]
+corr_matrix = df[corr_cols].corr()
+fig = px.imshow(
+    corr_matrix.round(2), text_auto=True, color_continuous_scale="RdBu_r", zmin=-1, zmax=1,
+    labels={"color": "Pearson r"},
+)
+fig.update_layout(height=450)
+st.plotly_chart(fig, use_container_width=True)
+st.markdown(
+    f"- **Pclass vs Survived**: {corr_matrix.loc['Pclass', 'Survived']:.2f}, higher class number means lower survival\n"
+    f"- **Fare vs Survived**: {corr_matrix.loc['Fare', 'Survived']:.2f}, higher fare means higher survival\n"
+    f"- **Pclass vs Fare**: {corr_matrix.loc['Pclass', 'Fare']:.2f}, 1st class costs more\n"
+    f"- **Age vs Survived**: {corr_matrix.loc['Age', 'Survived']:.2f}, weak, survival by age isn't linear "
+    "(children survive more, see age group breakdown)\n"
+    f"- **SibSp vs Parch**: {corr_matrix.loc['SibSp', 'Parch']:.2f}, families tend to travel together\n"
+    "- Sex and Embarked are excluded here, they're unordered categories, checked separately via chi-square below"
+)
+
+st.markdown("---")
 col1, col2 = st.columns(2)
 
 with col1:
