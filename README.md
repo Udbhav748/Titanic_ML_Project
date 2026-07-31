@@ -41,27 +41,33 @@ Python · pandas · scikit-learn · SciPy · Streamlit · Plotly · FastAPI · P
 
 ## Phase 3 — Machine Learning Model
 
+My goal was to predict whether a passenger survived, using a proper, defensible approach — not just training one model and stopping.
+
 **Feature engineering:**
-- `Title` extracted from `Name` (Mr/Mrs/Miss/Master) → also improved Age imputation (median per title group)
-- `FamilySize`, `IsAlone`
-- `HasCabin` binary flag from the sparse `Cabin` column
+- Extracted `Title` (Mr, Mrs, Miss, Master) from the `Name` column — also improved `Age` imputation, using the median age per title group instead of one overall average
+- Created `FamilySize` (SibSp + Parch + 1) and an `IsAlone` flag
+- Converted the mostly-missing `Cabin` column into a simple `HasCabin` yes/no flag instead of dropping it
 
-**Modeling approach:**
-- Single `sklearn.Pipeline` — preprocessing + model bundled as one artifact (prevents train/serve mismatch)
-- Stratified 80/20 train/test split
-- Compared **3 models** via 5-fold CV: Logistic Regression, Random Forest, Gradient Boosting → **Random Forest selected**
-- Tuned with **RandomizedSearchCV** instead of guessed hyperparameters
-- Diagnosed a precision/recall imbalance → fixed with **`class_weight="balanced"`**
+**Preprocessing:**
+- Filled missing values — median for numeric columns, most frequent for categorical
+- One-hot encoded categorical columns (Sex, Embarked, Pclass) so the model can read them
+- Scaled numeric columns
+- Bundled all of this into a single `scikit-learn Pipeline`, so the exact same steps run automatically every time — in the notebook, dashboard, or API
 
-**Final results (test set):**
+**Model selection:**
+- Split data 80/20, using a stratified split to keep the same survival ratio in both parts
+- Compared 3 models — Logistic Regression, Random Forest, and Gradient Boosting — using 5-fold cross-validation
+- Random Forest performed best, so I selected it
 
-| Metric | Score |
-|---|---|
-| Accuracy | 80.5% |
-| Precision | 0.72 |
-| Recall | 0.80 |
-| F1-score | 0.7586 |
-| ROC-AUC | 0.8526 |
+**Tuning:**
+- Used `RandomizedSearchCV` to automatically find better settings, instead of guessing fixed numbers
+
+**Fixing a real weakness:**
+- Noticed my model was missing a lot of real survivors, even though it looked accurate overall
+- Traced this to class imbalance in the data (~62% did not survive, ~38% did)
+- Fixed it using `class_weight="balanced"`, which meaningfully improved recall
+
+**Final results:** Accuracy 80.5%, Precision 0.72, Recall 0.80, F1-score 0.76, ROC-AUC 0.85
 
 Confusion matrix:
 
@@ -70,7 +76,7 @@ Confusion matrix:
 | Actual: No | 89 | 21 |
 | Actual: Yes | 14 | 55 |
 
-Saved as a single `model.pkl` via `joblib`.
+Saved the entire pipeline as `model.pkl` using `joblib`, so it works identically wherever it's loaded.
 
 ---
 
