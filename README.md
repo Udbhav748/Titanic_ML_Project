@@ -1,238 +1,227 @@
-# Titanic Survival Prediction — End-to-End ML Project
+<div align="center">
 
-An end-to-end machine learning project: statistical analysis, an interactive dashboard, a tuned classifier, a live API, and a cloud deployment — all built around one dataset, one connected pipeline.
+# Titanic Survival Prediction
 
-**Live Demo:**
-- API Docs: `http://13.51.85.67:8000/docs`
-- Dashboard: `http://13.51.85.67:8501`
+**A production-grade machine learning system — not a Kaggle notebook.**
 
----
+Leakage-safe preprocessing, a statistically-validated feature schema, a controlled four-model comparison, an explainable production model, a versioned deployment pipeline, and a tested, CI-gated codebase.
 
-## Tech Stack
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-1.5-F7931E?logo=scikitlearn&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Production-009688?logo=fastapi&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?logo=streamlit&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-EC2-FF9900?logo=amazonaws&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-76%20passing-2E7D32)
+![Coverage](https://img.shields.io/badge/Core%20Module%20Coverage-100%25-2E7D32)
+![License](https://img.shields.io/badge/License-MIT-1F4E79)
 
-Python · pandas · scikit-learn · SciPy · Streamlit · Plotly · FastAPI · Pydantic · Docker · AWS EC2
-
----
-
-## Phase 1 — Statistical Analysis (EDA)
-
-- **Dataset (891 passengers, 12 columns)**: Big enough to find real patterns, but small enough that unusual cases still matter.
-- **Missing data**: Age had some missing values, so I filled them with the middle value. Cabin had too many missing values to fill, but the missing data itself was useful. Embarked had only 2 missing values, so I filled them with the most common port.
-- **Fare**: Most people paid low fares, while a few paid very high fares, so I used a log transform to make the data more balanced.
-- **Age**: The ages were fairly balanced, so using the median was a good choice.
-- **Outliers**: I kept unusual values because they were real passengers, not mistakes.
-- **Correlation**: It showed expected relationships, like higher-class passengers usually paying higher fares.
-- **Survival rates**: I compared survival percentages for different groups like men vs. women and different passenger classes.
-- **Embarked**: At first, the boarding port seemed important, but it was actually because different ports had different mixes of passenger classes.
-- **Hypothesis test (p < 0.001)**: The fare difference between survivors and non-survivors was almost certainly real, not due to chance.
-- **Welch's t-test**: I used this because the two groups had different levels of variation, making the results more accurate.
+</div>
 
 ---
 
-## Phase 2 — Interactive Dashboard (Streamlit)
+## Project Overview
 
-- Converted top insights into a live, filterable dashboard
-- **KPI row:** total passengers, survival rate, avg fare by outcome
-- **1 filter:** Passenger Class (selectbox) — chosen since it had the clearest effect on survival
-- **3 Plotly charts:** survival by Sex, by Age Group, and a Fare comparison — each with a plain-English insight caption
-- Later expanded into **3 pages**: Overview, full live Analysis, and a Prediction page (loads the same `model.pkl` as the API)
+This project predicts Titanic passenger survival — but the dataset is the
+vehicle, not the point. It exists to demonstrate a full ML engineering
+lifecycle: a leakage-safe preprocessing pipeline, a production feature
+schema chosen by VIF and mutual-information evidence rather than
+intuition, a controlled comparison across four models, and a deployment
+plan that upgrades the model without breaking the live API. The system
+ships as a versioned FastAPI service, an 8-page Streamlit dashboard, and
+a Docker/EC2 deployment path, backed by 76 automated tests and a CI
+pipeline that rebuilds and validates every artifact on every push.
 
----
+## Key Highlights
 
-## Phase 3 — Machine Learning Model
+- [x] End-to-end ML pipeline — raw data to deployed API
+- [x] Production feature engineering — leakage-safe, fitted once, versioned
+- [x] Statistical feature validation — VIF, mutual information, chi-square
+- [x] Controlled model comparison — 4 models, one identical protocol
+- [x] Explainable predictions — coefficient decomposition, no black box
+- [x] FastAPI service — validated request/response contracts
+- [x] Dockerized deployment — versioned images, no assumed downtime
+- [x] AWS EC2 hosting — documented rollback runbook
+- [x] 8-page Streamlit dashboard — architecture, model card, live prediction
+- [x] Versioned artifacts — model, preprocessing, and schema paired and checked
+- [x] CI/CD — lint, rebuild artifacts, verify versions, test, on every push
 
-My goal was to predict whether a passenger survived, using a proper, defensible approach — not just training one model and stopping.
+## System Architecture
 
-**Feature engineering:**
-- Extracted `Title` (Mr, Mrs, Miss, Master) from the `Name` column — also improved `Age` imputation, using the median age per title group instead of one overall average
-- Created `FamilySize` (SibSp + Parch + 1) and an `IsAlone` flag
-- Converted the mostly-missing `Cabin` column into a simple `HasCabin` yes/no flag instead of dropping it
+<div align="center">
+<img src="docs/architecture-diagram.png" width="640" alt="System architecture — prediction request flow">
+</div>
 
-Saved the result as `data/train_transformed.csv`. Summary of what changed vs. the raw CSV:
-- Dropped `PassengerId`, `Name`, `Ticket` — identifiers/free text with no direct signal
-- Dropped `Cabin`, added `HasCabin` flag — 77% missing, but *whether* it's missing still carries signal
-- Added `Title` (from `Name`) — packs in age/sex/status; also rare titles merged
-- Added `FamilySize` and `IsAlone` (from `SibSp` + `Parch`) — solo travelers and large families both survived less
-- 177 people had no `Age` listed. Instead of guessing one age for everyone, I used the typical age for their `Title` (like Mr, Mrs, Master) — so a young boy ("Master") doesn't end up with an adult's age
+Both the preprocessing artifact and the model load once at process
+startup — never refit, never reloaded per request. Full request-to-response
+trace: [`reports/stage6_deployment_plan.md`](reports/stage6_deployment_plan.md).
 
-**Preprocessing:**
-- Filled missing values — median for numeric columns, most frequent for categorical
-- One-hot encoded categorical columns (Sex, Embarked, Pclass) so the model can read them
-- Scaled numeric columns
-- Bundled all of this into a single `scikit-learn Pipeline`, so the exact same steps run automatically every time — in the notebook, dashboard, or API
+## Dashboard Preview
 
-**Model selection:**
-- Split data 80/20, using a stratified split to keep the same survival ratio in both parts
-- Compared 3 models — Logistic Regression, Random Forest, and Gradient Boosting — using 5-fold cross-validation
-- Random Forest performed best, so I selected it
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/home.png" alt="Home"><br><sub align="center">Home</sub></td>
+<td width="50%"><img src="docs/screenshots/live-prediction.png" alt="Live Prediction"><br><sub>Live Prediction</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/screenshots/model-performance.png" alt="Model Performance"><br><sub>Model Performance</sub></td>
+<td width="50%"><img src="docs/screenshots/architecture-page.png" alt="Project Architecture"><br><sub>Project Architecture</sub></td>
+</tr>
+</table>
 
-![Model comparison](images/model_comparison.png)
+Full 6-page tour (Data Overview, Data Analysis, Project Architecture)
+available by running the dashboard locally — see
+[Running the Project](#running-the-project).
 
-| Model | Accuracy | Precision | Recall | F1-score | ROC-AUC |
-|---|---|---|---|---|---|
-| Logistic Regression | 0.825 | 0.781 | 0.754 | 0.767 | 0.869 |
-| Random Forest | 0.823 | 0.772 | 0.766 | 0.767 | 0.867 |
-| Gradient Boosting | 0.820 | 0.800 | 0.707 | 0.749 | 0.876 |
+## Machine Learning Pipeline
 
-*(All values are 5-fold CV means on the training set.)* Accuracy was nearly identical across all three. Gradient Boosting had the best precision and ROC-AUC, but its recall was noticeably weaker — it misses more real survivors. Random Forest and Logistic Regression tied on F1, and Random Forest won that tiebreak, which is why it was selected.
+<div align="center">
+<img src="docs/pipeline-diagram.png" width="560" alt="ML pipeline — dataset to deployment">
+</div>
 
-**Tuning:**
-- Used `RandomizedSearchCV` to automatically find better settings, instead of guessing fixed numbers
+Each stage is a standalone, reproducible artifact — not just a notebook cell:
 
-**Fixing a real weakness:**
-- Noticed my model was missing a lot of real survivors, even though it looked accurate overall
-- Traced this to class imbalance in the data (~62% did not survive, ~38% did)
-- Fixed it using `class_weight="balanced"`, which meaningfully improved recall
-
-**Final results:** Accuracy 80.5%, Precision 0.72, Recall 0.80, F1-score 0.76, ROC-AUC 0.85
-
-Confusion matrix:
-
-|  | Predicted: No | Predicted: Yes |
-|---|---|---|
-| Actual: No | 89 | 21 |
-| Actual: Yes | 14 | 55 |
-
-Saved the entire pipeline as `model.pkl` using `joblib`, so it works identically wherever it's loaded.
-
----
-
-## Phase 4 — FastAPI Service
-
-I wrapped my trained model in a FastAPI service so it can be used outside the notebook, by any program.
-
-- Built a `PassengerInput` Pydantic schema — defines exactly what valid input looks like; bad or missing data is automatically rejected (422 error)
-- Two endpoints: `/health` (checks the service and model are working) and `/predict` (returns a survival prediction with probability)
-- Model loaded once when the API starts, not on every request — keeps things fast
-- Added global exception handling, so no raw errors are ever leaked back to whoever calls the API
-- Tested everything through the auto-generated Swagger UI at `/docs`, sending real requests and confirming correct responses
-
----
-
-## Phase 5 — Docker
-
-I packaged my API using Docker so it runs the same way on any machine.
-
-- Started from a lightweight `python:3.11-slim` base image
-- Installed dependencies before copying my code, so rebuilds are faster (Docker reuses cached layers)
-- Used a separate, slimmer `requirements-api.txt` with only API-specific packages, instead of my full dev requirements — kept the image small (712MB)
-- Ran the container as a non-root user, for security
-- Made sure it's reachable from outside the container by binding to `0.0.0.0:8000`, not `127.0.0.1`
-- Tested it using curl and Python's requests library
-
-**Basic commands I used:**
-
-```bash
-docker build -t titanic-api .                                        # build the image
-docker run -d -p 8000:8000 --name titanic-api-container titanic-api  # run it as a container
-docker ps                                                             # check it's running
-docker logs titanic-api-container --tail 30                          # view its logs
-docker rm -f titanic-api-container                                   # remove it, to rebuild fresh
-```
-
----
-
-## Phase 6 — GitHub
-
-I used Git and GitHub to save my project properly and track every change.
-
-- Pushed the full project with a clean structure, README, and requirements file
-- For bigger changes, I used branches and pull requests instead of editing my main project directly
-- Found and fixed a real bug — my git remote was pointing to an old repository — caught it using `git remote -v`
-
-**Basic commands I used:**
-
-```bash
-git init                          # start tracking my project with Git
-git status                        # check what's changed
-git add .                         # stage my files
-git commit -m "message"           # save a snapshot with a note
-git push                          # send my changes to GitHub
-git remote -v                     # check which repo I'm connected to
-git pull origin main              # get the latest code from GitHub
-git checkout -b branch-name       # create and switch to a new branch
-```
-
----
-
-## Phase 7 — AWS EC2 Deployment (Stretch Goal)
-
-I deployed my project to a live cloud server so it's not just running on my own laptop.
-
-- Launched a free-tier `t3.micro` Ubuntu instance
-- Created a key pair file for secure SSH login, no passwords needed
-- Opened a firewall rule (security group) for ports 22, 8000, and 8501
-- Installed Docker on the server, and cloned my project from GitHub
-- Ran the API inside Docker, and ran the dashboard directly on the server using a Python virtual environment with `nohup`, so it keeps running after I disconnect
-- Confirmed both were genuinely live by opening them in my own browser, from my own computer, not just checking inside the server
-
-**Basic commands I used:**
-
-```bash
-ssh -i "titanic-key.pem" ubuntu@<my-instance-address>   # connect to my server
-sudo apt update && sudo apt install -y docker.io        # install Docker
-git clone <my-repo-url>                                 # copy my project onto the server
-docker build -t titanic-api .                           # same build command as locally
-docker run -d -p 8000:8000 --name titanic-api-container titanic-api
-```
-
----
-
-## Screenshots
-
-| Dashboard | Analysis |
+| Stage | Output |
 |---|---|
-| ![Dashboard](images/dashboard.png) | ![Analysis](images/analysis.png) |
+| Cleaning | `src/preprocessing.py` — leakage-safe imputation, fit on train split only |
+| Feature Engineering | `artifacts/preprocessing.pkl` — versioned, fitted-once transformer |
+| Feature Selection | [`reports/stage3_feature_selection.md`](reports/stage3_feature_selection.md) — 11 features cut to 8, evidence-based |
+| Training | `analysis/stage4_model_comparison.py` — 4 models, identical split/CV — visualized in [`notebooks/Stage4_Model_Comparison.ipynb`](notebooks/Stage4_Model_Comparison.ipynb) |
+| Evaluation | [`notebooks/Stage5_Model_Evaluation.ipynb`](notebooks/Stage5_Model_Evaluation.ipynb) — calibration, errors, explainability |
+| Deployment | [`reports/stage6_deployment_plan.md`](reports/stage6_deployment_plan.md) — versioning, rollback, zero-downtime plan |
 
-| Prediction | FastAPI Docs |
-|---|---|
-| ![Prediction](images/prediction.png) | ![FastAPI Docs](images/fastapi_docs.png) |
+**Feature Selection, in detail** — how Stages 1-3 connect:
 
----
+<div align="center">
+<img src="docs/feature-selection-journey.png" width="560" alt="Feature selection journey — 11 features to 8, Stages 1-3">
+</div>
 
-## Key Techniques Used
+## Model Performance
 
-`Missing value imputation` · `Log transformation` · `IQR outlier detection` · `Hypothesis testing (t-test, Levene's)` · `Correlation analysis` · `Feature engineering` · `One-hot encoding` · `sklearn Pipeline` · `Stratified split` · `Cross-validation` · `RandomizedSearchCV` · `Class imbalance handling` · `REST API design` · `Data validation (Pydantic)` · `Containerization (Docker)` · `Cloud deployment (EC2)` · `Version control (Git/GitHub)`
+| Model | Accuracy | F1 | ROC-AUC | Features |
+|---|---|---|---|---|
+| **Logistic Regression (production)** | **0.832** | **0.792** | **0.865** | **8** |
+| Random Forest (previous production) | 0.804 | 0.759 | 0.853 | 11 |
+| Gradient Boosting | 0.804 | 0.729 | 0.841 | 8 |
+| Random Forest (untuned, new schema) | 0.788 | 0.729 | 0.839 | 8 |
 
----
+Logistic Regression beat the previously-deployed, tuned Random Forest —
+**without any hyperparameter search of its own** — while training 17x
+faster and showing no overfitting. Full controlled-comparison methodology:
+[`reports/stage4_model_comparison.md`](reports/stage4_model_comparison.md).
+
+## Engineering Highlights
+
+- Preprocessing is fit once on the training split and persisted as a versioned artifact — never refit at inference.
+- The production feature schema removed three perfectly-collinear features (VIF = infinite), found by direct measurement, not guesswork.
+- Four models were compared under one identical split, cross-validation strategy, and evaluation protocol — not tuned unevenly and cherry-picked.
+- A real cross-artifact version-drift bug was found, fixed, and turned into a permanent regression test enforced in CI.
+- The API's client contract (`/predict`) stayed backward-compatible through a full model and schema change — `/v2/predict` is additive, not breaking.
+- 76 automated tests cover preprocessing, validation, model integration, the API, and the dashboard's data layer, with 100% coverage on the core preprocessing module.
 
 ## Project Structure
 
 ```
 Titanic-End-to-End/
-├── data/train.csv, train_transformed.csv
-├── notebooks/Udbhav_Statistical_Analysis.ipynb
-├── dashboard/
-│   ├── Overview.py
-│   └── pages/1_Analysis.py, 2_Prediction.py
-├── model/train.py, model.pkl
-├── api/main.py, schemas.py
-├── Dockerfile
-├── requirements.txt, requirements-api.txt
-└── README.md
+├── analysis/          Reproducible stage scripts (data audit, model comparison)
+├── api/               FastAPI service — schemas.py, main.py
+├── artifacts/         Versioned preprocessing + feature schema
+├── dashboard/         8-page Streamlit application
+├── docs/              Diagrams and dashboard screenshots (this README's assets)
+├── data/              Raw Titanic dataset
+├── model/             model_v1.pkl, model_v2.pkl, train.py, train_v2.py
+├── notebooks/         Stage 2 (EDA), Stage 4 (comparison), Stage 5 (evaluation) notebooks
+├── reports/           Stage-by-stage engineering write-ups
+├── src/               TitanicPreprocessor — shared feature engineering
+├── tests/             unit/, integration/, e2e/ — 76 tests
+├── .github/workflows/ CI pipeline
+└── Dockerfile
 ```
 
----
-
-## How to Run
+## Installation
 
 ```bash
-# Local — API
+git clone <repository-url>
+cd Titanic-End-to-End
+pip install -r requirements-dev.txt
+```
+
+## Running the Project
+
+```bash
+# API
 uvicorn api.main:app --reload
 
-# Local — Dashboard
-streamlit run dashboard/Overview.py
+# Dashboard
+streamlit run dashboard/Home.py
 
 # Docker
 docker build -t titanic-api .
 docker run -d -p 8000:8000 --name titanic-api-container titanic-api
 ```
 
----
+<div align="center">
+<img src="docs/deployment-diagram.png" width="480" alt="Deployment pipeline — Docker and AWS EC2">
+</div>
+
+## API Usage
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+        "pclass": 1, "sex": "female", "age": 29,
+        "sibsp": 0, "parch": 0, "fare": 100,
+        "embarked": "C", "has_cabin": true, "title": "Mrs"
+      }'
+```
+
+```json
+{"survived": true, "survival_probability": 0.9867}
+```
+
+Interactive docs at `/docs` once the API is running.
+
+## Dashboard
+
+6 pages: Home, Data Overview, Data Analysis, Model Performance, Live
+Prediction, Project Architecture. Every chart and metric is computed
+live from the versioned artifacts — nothing is hardcoded.
+
+## Testing & CI
+
+```bash
+pytest tests/ --cov=src --cov-report=term-missing
+ruff check src/ api/ analysis/ model/ tests/ dashboard/
+```
+
+76 tests (47 unit, 25 integration, 4 end-to-end) · 100% coverage on
+`src/preprocessing.py` · CI (`.github/workflows/ci.yml`) rebuilds every
+artifact from source and verifies cross-artifact version compatibility on
+every push. Full report: [`reports/stage8_engineering_quality.md`](reports/stage8_engineering_quality.md).
 
 ## Future Improvements
 
-- Try XGBoost / LightGBM
-- Automated tests for API and pipeline
-- CI/CD pipeline
-- Elastic IP + systemd/restart policies for full reboot persistence
+- Cut over `/predict` to `model_v2.pkl` and retire the version gap documented in Stage 6/8
+- Automate the EC2 deployment step currently run by hand
+- Add prediction monitoring and basic model-drift detection in production
+- Revisit the schema with a larger, non-Kaggle passenger dataset if one becomes available
+
+## License
+
+[MIT](LICENSE)
+
+---
+
+## Why This Project Stands Out
+
+- **A real leakage bug was found and fixed, not assumed away** — the original pipeline fit imputation on the full dataset before splitting; `TitanicPreprocessor` fits on the training split only, with a passing regression test proving it.
+- **Feature selection is evidence-based, with the receipts kept** — VIF proved `SibSp`+`Parch`+`FamilySize` are exactly collinear (VIF = infinite), not just "probably correlated."
+- **The winning model beat a tuned baseline while untuned** — Logistic Regression outperforms the production Random Forest without a hyperparameter search of its own, the least-confounded way that result could land.
+- **A production incident was caught before it shipped** — Stage 7 introduced a cross-artifact version mismatch; it was found by inspection, fixed, and converted into a CI-enforced regression test so it can't recur silently.
+- **The API never broke, through a full model swap** — `/predict`'s request and response contract is unchanged across an 11-feature-to-8-feature schema change and a Random-Forest-to-Logistic-Regression model swap.
+- **Every prediction explains itself** — coefficients decompose into signed, per-feature contributions for any single passenger, with no SHAP dependency required.
+- **The test suite documents a known gap instead of hiding it** — the end-to-end tests explicitly assert that the API (v1) and dashboard (v2) are allowed to disagree today, because that's the true state of the migration, not a bug to paper over.
+- **Artifacts are rebuilt in CI, not trusted as committed binaries** — `model_v2.pkl` and the preprocessing artifact are regenerated from `data/train.csv` on every push, so CI catches reproducibility breaks, not just code style.
+- **Rollback is a config change, not a redeploy** — model version selection is designed around an environment variable and two frozen `.pkl` files, so reverting a bad model doesn't require a code revert.
+- **Nine stages of engineering decisions are each independently documented** — every claim in this README is backed by a stage-specific report or notebook, not a single sprawling changelog.

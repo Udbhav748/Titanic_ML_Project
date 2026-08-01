@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main, improvements]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint
+        run: ruff check src/ api/ analysis/ model/ tests/ dashboard/
+
+      # Artifacts are build outputs, not committed binaries — regenerated
+      # here from source + data/train.csv (fixed random_state=42) so CI
+      # never depends on a stale or missing .pkl file being checked in.
+      - name: Build preprocessing + feature schema artifacts
+        run: python analysis/stage1_data_audit.py
+
+      - name: Build and promote model_v2
+        run: |
+          cp model/model.pkl model/model_v1.pkl
+          python model/train_v2.py
+
+      - name: Validate artifacts exist
+        run: |
+          test -f artifacts/preprocessing.pkl
+          test -f artifacts/feature_schema.json
+          test -f artifacts/preprocessing_metadata.json
+          test -f model/model_v1.pkl
+          test -f model/model_v2.pkl
+
+      - name: Verify preprocessing/model version compatibility
+        run: |
+          python -c "
+          import json
+          schema = json.load(open('artifacts/feature_schema.json'))
+          metadata = json.load(open('artifacts/preprocessing_metadata.json'))
+          assert schema['schema_version'] == metadata['schema_version'], (
+              f\"schema_version mismatch: feature_schema.json={schema['schema_version']} \"
+              f\"preprocessing_metadata.json={metadata['schema_version']}\"
+          )
+          assert metadata['model_version'] is not None, 'model_version is not set'
+          print('Version compatibility OK — schema_version', schema['schema_version'])
+          "
+
+      - name: Run tests
+        run: pytest tests/ --cov=src --cov-report=term-missing

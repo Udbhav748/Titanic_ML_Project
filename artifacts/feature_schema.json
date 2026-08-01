@@ -1,0 +1,225 @@
+{
+  "schema_version": "2.0.0",
+  "preprocessing_version": "1.1.0",
+  "features": [
+    {
+      "name": "PassengerId",
+      "dtype": "int64",
+      "source": "original",
+      "required": false,
+      "nullable": false,
+      "default": null,
+      "description": "Unique row identifier; no predictive signal.",
+      "production_status": "deprecated"
+    },
+    {
+      "name": "Pclass",
+      "dtype": "int64",
+      "source": "original",
+      "required": true,
+      "nullable": false,
+      "default": null,
+      "description": "Ticket class (1/2/3); proxy for socioeconomic status and physical deck location.",
+      "production_status": "production"
+    },
+    {
+      "name": "Name",
+      "dtype": "string",
+      "source": "original",
+      "required": true,
+      "nullable": false,
+      "default": null,
+      "description": "Free-text passenger name; not used directly, but the source column for Title extraction.",
+      "production_status": "deprecated"
+    },
+    {
+      "name": "Sex",
+      "dtype": "string (male|female)",
+      "source": "original",
+      "required": true,
+      "nullable": false,
+      "default": null,
+      "description": "Passenger sex.",
+      "production_status": "production"
+    },
+    {
+      "name": "Age",
+      "dtype": "float64",
+      "source": "original",
+      "required": true,
+      "nullable": true,
+      "default": null,
+      "description": "Age in years. Nullable on input; TitanicPreprocessor fills missing values with the fitted per-Title training median, never a static default.",
+      "production_status": "production"
+    },
+    {
+      "name": "SibSp",
+      "dtype": "int64",
+      "source": "original",
+      "required": true,
+      "nullable": false,
+      "default": null,
+      "description": "Siblings/spouses aboard.",
+      "production_status": "candidate"
+    },
+    {
+      "name": "Parch",
+      "dtype": "int64",
+      "source": "original",
+      "required": true,
+      "nullable": false,
+      "default": null,
+      "description": "Parents/children aboard.",
+      "production_status": "candidate"
+    },
+    {
+      "name": "Ticket",
+      "dtype": "string",
+      "source": "original",
+      "required": false,
+      "nullable": false,
+      "default": null,
+      "description": "Ticket number; high-cardinality identifier with no clean signal.",
+      "production_status": "deprecated"
+    },
+    {
+      "name": "Fare",
+      "dtype": "float64",
+      "source": "original",
+      "required": true,
+      "nullable": false,
+      "default": null,
+      "description": "Fare paid; right-skewed (flagged for a log-transform check in Stage 2).",
+      "production_status": "production"
+    },
+    {
+      "name": "Cabin",
+      "dtype": "string",
+      "source": "original",
+      "required": false,
+      "nullable": true,
+      "default": null,
+      "description": "77% missing. Not used directly \u2014 decomposed into HasCabin and Deck instead.",
+      "production_status": "deprecated"
+    },
+    {
+      "name": "Embarked",
+      "dtype": "string (C|Q|S)",
+      "source": "original",
+      "required": false,
+      "nullable": true,
+      "default": "S",
+      "description": "Port of embarkation. Nullable on input; TitanicPreprocessor fills missing values with the fitted training-split mode (currently 'S').",
+      "production_status": "production"
+    },
+    {
+      "name": "HasCabin",
+      "dtype": "int64 (0|1)",
+      "source": "engineered",
+      "required": false,
+      "nullable": false,
+      "default": false,
+      "description": "1 if a cabin was recorded, 0 otherwise.",
+      "production_status": "production"
+    },
+    {
+      "name": "FamilySize",
+      "dtype": "int64",
+      "source": "engineered",
+      "required": false,
+      "nullable": false,
+      "default": null,
+      "description": "Total family members aboard including the passenger; non-monotonic effect on survival (see reports/stage1_data_audit.md).",
+      "production_status": "production"
+    },
+    {
+      "name": "IsAlone",
+      "dtype": "int64 (0|1)",
+      "source": "engineered",
+      "required": false,
+      "nullable": false,
+      "default": null,
+      "description": "1 if traveling without any family aboard. Deterministic function of FamilySize.",
+      "production_status": "candidate"
+    },
+    {
+      "name": "Title",
+      "dtype": "string (Mr|Mrs|Miss|Master|Rare)",
+      "source": "engineered",
+      "required": false,
+      "nullable": false,
+      "default": "Mr",
+      "description": "Honorific extracted from Name; titles occurring <10 times in the training split (or never seen at fit time) collapse to 'Rare'.",
+      "production_status": "production"
+    },
+    {
+      "name": "FarePerPerson",
+      "dtype": "float64",
+      "source": "engineered",
+      "required": false,
+      "nullable": false,
+      "default": null,
+      "description": "Estimated per-individual fare, adjusting for group ticket pricing. Divide-by-zero guarded.",
+      "production_status": "candidate"
+    },
+    {
+      "name": "Deck",
+      "dtype": "string (A-G|T|Other|U)",
+      "source": "engineered",
+      "required": false,
+      "nullable": false,
+      "default": "U",
+      "description": "First letter of Cabin; 'U' where Cabin is missing, 'Other' where an unseen deck letter appears at inference. Highly redundant with HasCabin.",
+      "production_status": "candidate"
+    },
+    {
+      "name": "AgeGroup",
+      "dtype": "string (Child|Teen|Adult|Senior)",
+      "source": "engineered",
+      "required": false,
+      "nullable": false,
+      "default": null,
+      "description": "Age binned into Child (<=12) / Teen (13-18) / Adult (19-59) / Senior (60+).",
+      "production_status": "candidate"
+    }
+  ],
+  "production_features": [
+    "Pclass",
+    "Sex",
+    "Age",
+    "Fare",
+    "Embarked",
+    "HasCabin",
+    "FamilySize",
+    "Title"
+  ],
+  "candidate_features": [
+    "FarePerPerson",
+    "Deck",
+    "AgeGroup",
+    "SibSp",
+    "Parch",
+    "IsAlone",
+    "Sex_Pclass"
+  ],
+  "engineered_features": [
+    "HasCabin",
+    "FamilySize",
+    "IsAlone",
+    "Title",
+    "FarePerPerson",
+    "Deck",
+    "AgeGroup"
+  ],
+  "feature_order": [
+    "Pclass",
+    "Sex",
+    "Age",
+    "Fare",
+    "Embarked",
+    "HasCabin",
+    "FamilySize",
+    "Title"
+  ],
+  "notes": "Promoted to schema_version 2.0.0 by model/train_v2.py per the Stage 3 decision review and Stage 4/5 validation. SibSp/Parch remain required raw inputs (used to compute FamilySize) but are no longer direct model features; IsAlone was dropped as redundant with FamilySize."
+}

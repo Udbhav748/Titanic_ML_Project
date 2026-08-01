@@ -1,0 +1,75 @@
+{
+  "fitted_on": "data/train.csv, 80% stratified split (test_size=0.2, random_state=42)",
+  "n_train_rows": 712,
+  "imputation": {
+    "age_median_by_title": {
+      "Master": 3.0,
+      "Miss": 21.0,
+      "Mr": 30.0,
+      "Mrs": 35.0,
+      "Rare": 48.5
+    },
+    "age_median_overall_fallback": 28.5,
+    "embarked_mode": "S",
+    "rare_titles_collapsed": [
+      "Dr",
+      "Rev",
+      "Mlle",
+      "Col",
+      "Major",
+      "Lady",
+      "Sir",
+      "Ms",
+      "Jonkheer",
+      "Don"
+    ],
+    "known_decks": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "T"
+    ]
+  },
+  "static_config": {
+    "rare_title_min_count": 10,
+    "title_normalize_map": {
+      "Mlle": "Miss",
+      "Ms": "Miss",
+      "Mme": "Mrs"
+    },
+    "title_normalize_map_note": "Mlle/Ms/Mme all occur fewer than rare_title_min_count times in this dataset, so the rare-title collapse step absorbs them into 'Rare' before this map would ever run. Kept for parity with model/train.py's existing logic; documented as a known no-op in reports/stage1_summary.md rather than silently changed.",
+    "unseen_title_fallback": "Rare",
+    "deck_unknown_label": "U",
+    "deck_other_label": "Other",
+    "age_group_bins": [
+      0,
+      12,
+      18,
+      59,
+      120
+    ],
+    "age_group_labels": [
+      "Child",
+      "Teen",
+      "Adult",
+      "Senior"
+    ]
+  },
+  "preprocessing_class": "src.preprocessing.TitanicPreprocessor",
+  "preprocessing_version": "1.1.0",
+  "model_version": "2.0.0",
+  "schema_version": "2.0.0",
+  "creation_timestamp": "2026-07-31T20:28:23.933129+00:00",
+  "training_dataset": "data/train.csv",
+  "sklearn_version": "1.9.0",
+  "python_version": "3.13.14",
+  "git_commit": "a3b4418b0c059f52750b4397d099bec3e59fbc39",
+  "artifact_path": "artifacts/preprocessing.pkl",
+  "versioning_rationale": "Versioning preprocessing artifacts separately from the code that produced them makes it possible to answer 'exactly which imputation values, which feature schema, and which git commit produced the model currently running in production?' without re-deriving it. Without these fields, a production incident (unexpected predictions, an API/model mismatch after a deploy) has no fast way to confirm whether the model, the preprocessing artifact, or a code change was responsible \u2014 each field here (preprocessing_version, schema_version, model_version, git_commit, creation_timestamp) is a coordinate that lets you pin down exactly what was deployed and roll back precisely instead of guessing. preprocessing_version tracks the *code* (bump it when fit()/transform() logic changes in a way that could shift fitted values); creation_timestamp/git_commit/training_dataset track this specific *fitted instance's* provenance. model_version is null here because model/model.pkl has no formal versioning scheme yet \u2014 the Stage 4 retrain is the natural point to introduce one and populate this field.",
+  "model_promoted_at": "2026-07-31T20:28:37.300248+00:00",
+  "model_promotion_note": "model/model_v2.pkl (Logistic Regression, 8-feature schema) promoted to production per Stage 4's controlled comparison and Stage 5's validation. model/model_v1.pkl (Random Forest, 11-feature schema) retained for rollback."
+}

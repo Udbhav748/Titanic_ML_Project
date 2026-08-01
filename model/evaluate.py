@@ -1,7 +1,7 @@
 import joblib
 import pandas as pd
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, classification_report, roc_auc_score
 
 # Reload data the same way train.py does
 data = pd.read_csv("data/train.csv")

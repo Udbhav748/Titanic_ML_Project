@@ -1,0 +1,90 @@
+[
+  {
+    "name": "Baseline (production RF, 11 features)",
+    "accuracy": 0.8044692737430168,
+    "precision": 0.7236842105263158,
+    "recall": 0.7971014492753623,
+    "f1": 0.7586206896551724,
+    "roc_auc": 0.8525691699604744,
+    "cv_mean": 0.7949171434815574,
+    "cv_std": 0.051414662565984086,
+    "cv_scores": [
+      0.7719298245614035,
+      0.7433628318584071,
+      0.8888888888888888,
+      0.7627118644067796,
+      0.8076923076923077
+    ],
+    "train_f1": 0.8372093023255814,
+    "train_time_s": 0.8915060999570414,
+    "predict_latency_ms": 0.25319888265595336,
+    "n_features": 11,
+    "schema": "current (11 features, full-dataset-fit imputation)"
+  },
+  {
+    "name": "Logistic Regression (8 features)",
+    "accuracy": 0.8324022346368715,
+    "precision": 0.76,
+    "recall": 0.8260869565217391,
+    "f1": 0.7916666666666666,
+    "roc_auc": 0.8654808959156784,
+    "cv_mean": 0.7687807746470489,
+    "cv_std": 0.04141335280507396,
+    "cv_scores": [
+      0.7413793103448276,
+      0.7387387387387387,
+      0.8392857142857143,
+      0.7317073170731707,
+      0.7927927927927928
+    ],
+    "train_f1": 0.7795414462081128,
+    "train_time_s": 0.028979900002013892,
+    "predict_latency_ms": 0.06327932952856385,
+    "n_features": 8,
+    "schema": "proposed (8 features, leakage-safe imputation, Fare log1p)"
+  },
+  {
+    "name": "Random Forest (8 features)",
+    "accuracy": 0.7877094972067039,
+    "precision": 0.7183098591549296,
+    "recall": 0.7391304347826086,
+    "f1": 0.7285714285714285,
+    "roc_auc": 0.8393939393939394,
+    "cv_mean": 0.7505828430599072,
+    "cv_std": 0.018703480810713314,
+    "cv_scores": [
+      0.7454545454545455,
+      0.7207207207207207,
+      0.7454545454545455,
+      0.7706422018348624,
+      0.7706422018348624
+    ],
+    "train_f1": 0.9836065573770492,
+    "train_time_s": 0.6539331000531092,
+    "predict_latency_ms": 0.2472094971005019,
+    "n_features": 8,
+    "schema": "proposed (8 features, leakage-safe imputation, Fare log1p)"
+  },
+  {
+    "name": "Gradient Boosting (8 features)",
+    "accuracy": 0.8044692737430168,
+    "precision": 0.7833333333333333,
+    "recall": 0.6811594202898551,
+    "f1": 0.7286821705426356,
+    "roc_auc": 0.8412384716732543,
+    "cv_mean": 0.7628374158911512,
+    "cv_std": 0.016850819478728244,
+    "cv_scores": [
+      0.7889908256880734,
+      0.7567567567567568,
+      0.7755102040816326,
+      0.7454545454545455,
+      0.7474747474747475
+    ],
+    "train_f1": 0.8790786948176583,
+    "train_time_s": 0.13435790000949055,
+    "predict_latency_ms": 0.029534078398251166,
+    "n_features": 8,
+    "schema": "proposed (8 features, leakage-safe imputation, Fare log1p)"
+  }
+]

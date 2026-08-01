@@ -1,0 +1,9 @@
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = [
+    "E402",  # scripts intentionally sys.path.insert() before local imports
+    "E501",  # long lines are embedded report/markdown prose, not code structure
+]

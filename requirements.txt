@@ -3,6 +3,7 @@ joblib>=1.4.2
 pandas
 numpy
 scipy
+statsmodels
 matplotlib
 seaborn
 fastapi
