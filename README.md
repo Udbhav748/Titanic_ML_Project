@@ -2,9 +2,7 @@
 
 # Titanic Survival Prediction
 
-**A production-grade machine learning system — not a Kaggle notebook.**
 
-Leakage-safe preprocessing, a statistically-validated feature schema, a controlled four-model comparison, an explainable production model, a versioned deployment pipeline, and a tested, CI-gated codebase.
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-1.5-F7931E?logo=scikitlearn&logoColor=white)
@@ -15,6 +13,9 @@ Leakage-safe preprocessing, a statistically-validated feature schema, a controll
 ![Tests](https://img.shields.io/badge/Tests-76%20passing-2E7D32)
 ![Coverage](https://img.shields.io/badge/Core%20Module%20Coverage-100%25-2E7D32)
 ![License](https://img.shields.io/badge/License-MIT-1F4E79)
+
+[![Live Dashboard](https://img.shields.io/badge/Live-Dashboard-FF4B4B?logo=streamlit&logoColor=white)](http://13.51.85.67:8501)
+[![Live API Docs](https://img.shields.io/badge/Live-API%20Docs-009688?logo=fastapi&logoColor=white)](http://13.51.85.67:8000/docs)
 
 </div>
 
@@ -69,8 +70,14 @@ trace: [`reports/stage6_deployment_plan.md`](reports/stage6_deployment_plan.md).
 </tr>
 </table>
 
-Full 6-page tour (Data Overview, Data Analysis, Project Architecture)
-available by running the dashboard locally — see
+**The core evidence behind the model choice** — all four candidates under one identical evaluation protocol:
+
+<div align="center">
+<img src="docs/screenshots/model-comparison-chart.png" width="720" alt="Model comparison across Accuracy, Precision, Recall, F1, and ROC-AUC">
+</div>
+
+Full 6-page tour (Data Overview, Data Analysis, Project Architecture) at
+the [live dashboard](http://13.51.85.67:8501), or run it locally — see
 [Running the Project](#running-the-project).
 
 ## Machine Learning Pipeline
@@ -180,7 +187,8 @@ curl -X POST http://localhost:8000/predict \
 {"survived": true, "survival_probability": 0.9867}
 ```
 
-Interactive docs at `/docs` once the API is running.
+Interactive docs at `/docs` once the API is running, or try the
+[live instance](http://13.51.85.67:8000/docs) directly.
 
 ## Dashboard
 
