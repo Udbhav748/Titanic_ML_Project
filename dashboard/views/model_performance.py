@@ -39,6 +39,7 @@ from theme import (
     page_header,
     style_fig,
     takeaway,
+    what_this_means,
 )
 
 results = load_stage4_results()
@@ -94,6 +95,14 @@ with tab1:
             "- Random Forest is the weakest model on every metric, despite sharing the same 8-feature schema"
         )
     takeaway("Performance alone favors Logistic Regression, but the margin is modest — stability and generalization matter just as much.")
+    what_this_means(
+        observation="Logistic Regression leads on 4 of 5 metrics; Gradient Boosting only edges "
+        "it out on precision.",
+        impact="The gap between the top models is real but modest, so performance alone isn't "
+        "a strong enough reason to pick one.",
+        decision="Logistic Regression was selected once stability and generalization were "
+        "factored in too.",
+    )
 
 with tab2:
     fig = go.Figure()
@@ -111,6 +120,12 @@ with tab2:
             "- The baseline has the widest spread despite being the only tuned model"
         )
     takeaway("Tight variance without a competitive score isn't real stability — it's consistency around a weaker answer.")
+    what_this_means(
+        observation="Logistic Regression's worst fold still beats the median fold of both tree ensembles.",
+        impact="Tight variance doesn't mean much if it's tight around a weaker score.",
+        decision="Consistent tree-ensemble scores were not treated as a reason to prefer them "
+        "over Logistic Regression.",
+    )
 
 with tab3:
     names = [MODEL_SHORT_NAMES[r["name"]] for r in results]
@@ -126,6 +141,13 @@ with tab3:
             "- Gradient Boosting overfits less severely; the tuned baseline overfits least of the three ensembles"
         )
     takeaway("Only Logistic Regression generalizes with no overfitting signature — the rest memorize to varying degrees.")
+    what_this_means(
+        observation="Random Forest's train F1 is 0.255 higher than its test F1; Logistic Regression "
+        "shows no such gap.",
+        impact="That gap is a classic overfitting signature — the tree memorized the training set.",
+        decision="The lack of an overfitting signature was one of the deciding factors for "
+        "shipping Logistic Regression.",
+    )
 
 with tab4:
     comparison = load_comparison_curves()
@@ -158,6 +180,13 @@ with tab4:
             "consistent with the balanced class weighting"
         )
     takeaway("ROC-AUC alone would have made this a close call — a 0.026 spread is not a decisive signal by itself.")
+    what_this_means(
+        observation="All four ROC curves cluster tightly, and the model has more false positives "
+        "than false negatives.",
+        impact="A 0.026 AUC spread between the best and worst model isn't a decisive signal by itself.",
+        decision="The false-positive lean matches the balanced class weighting used during "
+        "training, so it wasn't adjusted further.",
+    )
 
 with tab5:
     comparison = load_comparison_curves()
@@ -179,6 +208,13 @@ with tab5:
             "- Under this class imbalance, the Precision-Recall gap is wider and clearer than the ROC gap"
         )
     takeaway("PR analysis reinforces the ROC comparison and carries more weight under a 62/38 class imbalance.")
+    what_this_means(
+        observation="Logistic Regression tracks at or above the other models through most of "
+        "the recall range.",
+        impact="Under this class imbalance, the Precision-Recall gap is a clearer signal than "
+        "the ROC gap.",
+        decision="It reinforces the ROC comparison rather than changing the model choice.",
+    )
 
 with tab6:
     frac_pos, mean_pred = calibration_curve(y_test, y_proba, n_bins=8, strategy="quantile")
@@ -197,6 +233,14 @@ with tab6:
             "- The Brier score beats the always-predict-base-rate score by a wide margin"
         )
     takeaway("Well-calibrated at the extremes, mildly overconfident mid-range — not worth recalibrating on a 179-row test set.")
+    what_this_means(
+        observation="Predicted probabilities track observed outcomes closely, except for some "
+        "overconfidence in the 0.3-0.5 range.",
+        impact="Overconfidence in the middle range matters if the probability itself is shown "
+        "to a user, not just the final label.",
+        decision="Recalibration wasn't worth it on a 179-row test set, so the raw probabilities "
+        "are shown as-is.",
+    )
 
 with tab7:
     thresholds = np.arange(0.05, 0.96, 0.01)
@@ -224,6 +268,12 @@ with tab7:
             "- Precision and recall trade off smoothly, with no cliff that would justify moving off 0.50"
         )
     takeaway("The default 0.50 threshold stays in production — the theoretical optimum is within measurement noise.")
+    what_this_means(
+        observation=f"The best F1 threshold is {thresholds[best_idx]:.2f}, only 0.005 better "
+        "than the default 0.50.",
+        impact="That's noise on a 179-row test set, not a meaningful improvement.",
+        decision="The default 0.50 threshold stays in production.",
+    )
 
 with tab8:
     col1, col2 = st.columns(2)
@@ -254,6 +304,13 @@ with tab8:
             "- Family Size's coefficient fits a straight line through a relationship that isn't actually linear"
         )
     takeaway("Ranking differences trace back to the same correlated features the multicollinearity analysis already flagged.")
+    what_this_means(
+        observation="Sex and Title dominate both the coefficient and permutation-importance views.",
+        impact="Pclass ranks lower by permutation importance because its signal overlaps with "
+        "Fare and Has Cabin.",
+        decision="That overlap is the same multicollinearity the VIF check flagged earlier, "
+        "not a new problem.",
+    )
 
 st.divider()
 st.subheader("Model Development")
@@ -328,6 +385,14 @@ for col, r in zip(hp_cols, results):
         with st.container(border=True, height=230, key=f"card-hp-{MODEL_SHORT_NAMES[r['name']].lower().replace(' ', '-')}"):
             st.markdown(f"**{MODEL_SHORT_NAMES[r['name']]}**")
             st.markdown("\n".join(f"- {p}" for p in HYPERPARAMETERS[r["name"]]))
+
+what_this_means(
+    observation="Only the baseline Random Forest was tuned with RandomizedSearchCV; the three "
+    "candidates use fixed configurations.",
+    impact="That means Logistic Regression won without ever getting its own hyperparameter search.",
+    decision="This makes the comparison harder to argue with — the simplest model won on an "
+    "uneven playing field, in its own favor.",
+)
 
 st.write("")
 st.markdown("**3. Model Selection Strategy**")

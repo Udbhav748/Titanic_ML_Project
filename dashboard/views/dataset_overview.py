@@ -20,6 +20,7 @@ from theme import (
     page_header,
     style_fig,
     takeaway,
+    what_this_means,
 )
 
 raw = load_raw()
@@ -104,6 +105,13 @@ takeaway(
     "Missing values are concentrated in only a small number of features, enabling targeted "
     "preprocessing without affecting the overall dataset quality."
 )
+what_this_means(
+    observation="Cabin is missing for 77% of passengers, and Age for about 20%.",
+    impact="77% missing is too much to impute reliably, but the fact that a cabin was "
+    "recorded at all still carries information.",
+    decision="Cabin became a Has Cabin flag instead of being dropped, and Age was imputed "
+    "rather than removed.",
+)
 
 st.divider()
 st.subheader("Target Distribution")
@@ -142,6 +150,13 @@ with st.container(border=True, key="card-target-dist"):
         st.plotly_chart(fig, use_container_width=True)
 
 takeaway("The dataset is moderately imbalanced, with approximately 62% of passengers not surviving and 38% surviving.")
+what_this_means(
+    observation="About 62% of passengers didn't survive, versus 38% who did.",
+    impact="That's an imbalance worth tracking — a model that always predicts \"died\" "
+    "would already look 62% accurate.",
+    decision="Accuracy is reported alongside F1 and ROC-AUC throughout this dashboard, "
+    "never on its own.",
+)
 
 st.divider()
 st.subheader("Feature Summary")

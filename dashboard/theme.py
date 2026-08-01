@@ -259,3 +259,12 @@ def page_header(title: str, intro: str) -> None:
     st.title(title)
     st.markdown(f"<p style='color:{TEXT_MUTED}; font-size:1.05rem;'>{intro}</p>", unsafe_allow_html=True)
     st.divider()
+
+
+def what_this_means(observation: str, impact: str, decision: str | None = None) -> None:
+    """Collapsed-by-default explanation block, used the same way on every chart."""
+    with st.expander("What This Means"):
+        st.markdown(f"**Observation**  \n{observation}")
+        st.markdown(f"**Impact**  \n{impact}")
+        if decision:
+            st.markdown(f"**Decision**  \n{decision}")

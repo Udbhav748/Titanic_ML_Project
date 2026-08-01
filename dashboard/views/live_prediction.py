@@ -20,6 +20,7 @@ from data_utils import (
 from theme import (
     ERROR,
     PRIMARY,
+    QUATERNARY,
     SUCCESS,
     TEXT_MUTED,
     TEXT_PRIMARY,
@@ -36,17 +37,33 @@ EMBARK_LABEL = {"S": "Southampton", "C": "Cherbourg", "Q": "Queenstown"}
 
 page_header("Live Prediction", "Enter passenger details and get a real prediction from the trained model.")
 
+st.markdown(
+    f"""
+    <style>
+        div[data-testid="stForm"] {{
+            border-top: 5px solid {PRIMARY} !important;
+            border-radius: 12px !important;
+            box-shadow: 0 1px 4px rgba(17, 24, 39, 0.06);
+        }}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 with st.form("prediction_form"):
     col1, col2, col3 = st.columns(3)
     with col1:
+        st.markdown(f"<span style='color:{PRIMARY}; font-weight:700; font-size:0.8rem;'>PASSENGER PROFILE</span>", unsafe_allow_html=True)
         pclass = st.selectbox("Passenger Class", [1, 2, 3], index=0)
         sex = st.selectbox("Sex", ["female", "male"])
         age = st.number_input("Age", min_value=0.0, max_value=100.0, value=29.0)
     with col2:
+        st.markdown(f"<span style='color:{QUATERNARY}; font-weight:700; font-size:0.8rem;'>FAMILY</span>", unsafe_allow_html=True)
         sibsp = st.number_input("Siblings / Spouses Aboard", min_value=0, value=0)
         parch = st.number_input("Parents / Children Aboard", min_value=0, value=0)
         fare = st.number_input("Fare Paid ($)", min_value=0.0, value=32.0)
     with col3:
+        st.markdown(f"<span style='color:{SUCCESS}; font-weight:700; font-size:0.8rem;'>TRAVEL DETAILS</span>", unsafe_allow_html=True)
         embarked = st.selectbox("Port of Embarkation", ["S", "C", "Q"])
         has_cabin = st.checkbox("Cabin Recorded")
         title = st.selectbox("Title", ["Mr", "Mrs", "Miss", "Master", "Rare"])

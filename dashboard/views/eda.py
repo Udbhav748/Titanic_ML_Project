@@ -26,6 +26,7 @@ from theme import (
     page_header,
     style_fig,
     takeaway,
+    what_this_means,
 )
 
 BAR_PALETTE = [PRIMARY, SUCCESS, WARNING, QUATERNARY, TERTIARY, ERROR]
@@ -51,8 +52,18 @@ with tab1:
         st.plotly_chart(style_fig(fig), use_container_width=True)
     if metric == "Fare":
         takeaway("Fare separates outcomes more cleanly than Age, and is heavily right-skewed — log-transformed inside the model pipeline.")
+        what_this_means(
+            observation="Fare is heavily right-skewed, with a long tail of high-paying passengers.",
+            impact="A skewed input like this can distort a linear model's coefficients.",
+            decision="Fare is log-transformed before it reaches the model.",
+        )
     else:
         takeaway("Age distributions look similar between groups except for a small child survival spike.")
+        what_this_means(
+            observation="Age distributions for survivors and non-survivors mostly overlap, aside "
+            "from a small child survival spike.",
+            impact="On its own, Age doesn't separate the outcome cleanly.",
+        )
 
 with tab2:
     filter_col, _ = st.columns([1, 3])
@@ -92,6 +103,29 @@ with tab2:
             st.plotly_chart(fig, use_container_width=True)
 
     takeaway("Sex, Pclass, and Title all separate survival cleanly — the three strongest predictors in the model.")
+    SURVIVAL_WTM = {
+        "Sex": dict(
+            observation="Women survived at a much higher rate than men.",
+            impact="Sex is one of the cleanest single splits in the whole dataset.",
+            decision="Sex was kept as a core feature in the production model.",
+        ),
+        "Pclass": dict(
+            observation="Survival rate drops sharply from 1st to 3rd class.",
+            impact="Ticket class acts as a proxy for socioeconomic status and deck location.",
+            decision="Passenger Class was kept as a core feature.",
+        ),
+        "Title": dict(
+            observation="Titles like Mrs and Miss survive far more often than Mr.",
+            impact="Title captures sex, age, and social status in a single field.",
+            decision="Title was engineered from the Name field and kept in the final schema.",
+        ),
+        "Embarked": dict(
+            observation="Survival rate varies by port of embarkation, though less sharply than "
+            "by Sex or Class.",
+            impact="The effect is real but smaller than the other predictors.",
+        ),
+    }
+    what_this_means(**SURVIVAL_WTM[factor])
 
 with tab3:
     corr_cols = ["Survived", "Pclass", "Age", "SibSp", "Parch", "Fare", "FamilySize", "FarePerPerson", "HasCabin", "IsAlone"]
@@ -103,6 +137,12 @@ with tab3:
     with st.container(border=True, key="card-correlation-chart"):
         st.plotly_chart(style_fig(fig, height=480), use_container_width=True)
     takeaway("FamilySize correlates strongly with both SibSp and Parch, and FarePerPerson tracks Fare almost 1:1 — exactly the redundancy VIF quantifies next.")
+    what_this_means(
+        observation="FamilySize correlates strongly with both SibSp and Parch, and FarePerPerson "
+        "tracks Fare almost 1:1.",
+        impact="Redundant features like these inflate variance without adding new signal.",
+        decision="This is exactly what the VIF check quantifies next, before anything gets dropped.",
+    )
 
 with tab4:
     heatmap_data = df.groupby(["Pclass", "Sex"], observed=True)["Survived"].mean().unstack().mul(100).round(1)
@@ -113,6 +153,13 @@ with tab4:
     with st.container(border=True, key="card-class-sex-chart"):
         st.plotly_chart(style_fig(fig, height=350), use_container_width=True)
     takeaway("Sex sets the baseline; class reshapes it unevenly — 1st-class women survive at 97%, even 1st-class men only reach 37%.")
+    what_this_means(
+        observation="Class and Sex interact — 1st-class women survive at 97%, but 1st-class men "
+        "only reach 37%.",
+        impact="Neither feature alone explains survival as well as the two together.",
+        decision="This is part of why both Sex and Pclass were kept as separate features instead "
+        "of being collapsed into one.",
+    )
 
 with tab5:
     X = df[["Pclass", "Age", "SibSp", "Parch", "Fare", "FamilySize", "FarePerPerson", "HasCabin", "IsAlone"]].copy()
@@ -134,6 +181,11 @@ with tab5:
     with st.container(border=True, key="card-vif-chart"):
         st.plotly_chart(style_fig(fig, height=380), use_container_width=True)
     takeaway("SibSp, Parch, and FamilySize are perfectly collinear (VIF = infinite) — never train a model with all three together.")
+    what_this_means(
+        observation="SibSp, Parch, and FamilySize show infinite VIF — they're perfectly collinear.",
+        impact="Feeding a linear model all three would make its coefficients unstable and hard to trust.",
+        decision="Only FamilySize was kept; SibSp and Parch were dropped from the production schema.",
+    )
 
 with tab6:
     FSJ_STAGES = [
@@ -208,4 +260,12 @@ with tab6:
     takeaway(
         "Every feature was retained or removed based on statistical evidence and engineering judgment "
         "rather than intuition."
+    )
+    what_this_means(
+        observation="Statistical testing, mutual information, and the VIF check together cut the "
+        "candidate set from 11 features to 8.",
+        impact="Every removed feature was either redundant or added little predictive value for "
+        "its engineering cost.",
+        decision="The final 8-feature schema is what's used for both training and every prediction "
+        "in this dashboard.",
     )
