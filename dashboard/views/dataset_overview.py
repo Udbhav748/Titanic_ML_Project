@@ -102,8 +102,8 @@ with summary_col:
         st.markdown(f"<div style='font-size:1.4rem; font-weight:700; color:{TEXT_PRIMARY};'>{completeness:.1f}%</div>", unsafe_allow_html=True)
 
 takeaway(
-    "Missing values are concentrated in only a small number of features, enabling targeted "
-    "preprocessing without affecting the overall dataset quality."
+    "Only a couple of features have missing data, so we can fix those specific gaps "
+    "without touching the rest of the dataset."
 )
 what_this_means(
     observation="Cabin is missing for 77% of passengers, and Age is missing for about 20%.",
@@ -149,7 +149,10 @@ with st.container(border=True, key="card-target-dist"):
         )
         st.plotly_chart(fig, use_container_width=True)
 
-takeaway("The dataset is moderately imbalanced, with approximately 62% of passengers not surviving and 38% surviving.")
+takeaway(
+    "The dataset has more passengers who did not survive than those who survived, but "
+    "the difference is not large enough to cause major issues."
+)
 what_this_means(
     observation="About 62% of passengers did not survive, and 38% did.",
     impact="With this kind of imbalance, a model could look 62% accurate just by guessing "
@@ -194,6 +197,6 @@ with eng_col:
             "- Passenger Title"
         )
 takeaway(
-    "These features were selected through statistical analysis, feature evaluation, and engineering "
-    "review to create a compact, interpretable, and effective prediction model."
+    "Every feature in this set earned its place through testing, not guesswork, giving us "
+    "a small model that's still easy to explain."
 )

@@ -51,7 +51,7 @@ with tab1:
     with st.container(border=True, key="card-feature-dist-chart"):
         st.plotly_chart(style_fig(fig), use_container_width=True)
     if metric == "Fare":
-        takeaway("Fare separates outcomes more cleanly than Age, and is heavily right-skewed — log-transformed inside the model pipeline.")
+        takeaway("Fare tells us more about survival than Age does, but it's heavily skewed, so we applied a log transform first.")
         what_this_means(
             observation="Most passengers paid a low fare, but a small group paid a lot more, "
             "giving the chart a long tail.",
@@ -60,7 +60,7 @@ with tab1:
             decision="We applied a log transform to Fare before feeding it into the model.",
         )
     else:
-        takeaway("Age distributions look similar between groups except for a small child survival spike.")
+        takeaway("Age looks almost the same for both groups, except young children survived a bit more often.")
         what_this_means(
             observation="People who survived and people who didn't show very similar age "
             "patterns, apart from a small bump in survival among young children.",
@@ -104,7 +104,7 @@ with tab2:
             )
             st.plotly_chart(fig, use_container_width=True)
 
-    takeaway("Sex, Pclass, and Title all separate survival cleanly — the three strongest predictors in the model.")
+    takeaway("Sex, Passenger Class, and Title are the three strongest predictors, and each one splits survival outcomes clearly.")
     SURVIVAL_WTM = {
         "Sex": dict(
             observation="Women survived at a much higher rate than men.",
@@ -141,7 +141,7 @@ with tab3:
     )
     with st.container(border=True, key="card-correlation-chart"):
         st.plotly_chart(style_fig(fig, height=480), use_container_width=True)
-    takeaway("FamilySize correlates strongly with both SibSp and Parch, and FarePerPerson tracks Fare almost 1:1 — exactly the redundancy VIF quantifies next.")
+    takeaway("FamilySize overlaps heavily with SibSp and Parch, and FarePerPerson tracks Fare almost exactly. The VIF check confirms just how much.")
     what_this_means(
         observation="FamilySize moves closely with SibSp and Parch, and FarePerPerson tracks "
         "Fare almost exactly.",
@@ -159,7 +159,7 @@ with tab4:
     )
     with st.container(border=True, key="card-class-sex-chart"):
         st.plotly_chart(style_fig(fig, height=350), use_container_width=True)
-    takeaway("Sex sets the baseline; class reshapes it unevenly — 1st-class women survive at 97%, even 1st-class men only reach 37%.")
+    takeaway("Sex sets the baseline survival rate, and class shifts it further. First class women survived 97% of the time, first class men only 37%.")
     what_this_means(
         observation="Class changes how much Sex matters, since 1st class women survived 97% "
         "of the time while 1st class men only survived 37% of the time.",
@@ -187,7 +187,7 @@ with tab5:
     fig.add_vline(x=5, line_dash="dash", line_color=TEXT_MUTED)
     with st.container(border=True, key="card-vif-chart"):
         st.plotly_chart(style_fig(fig, height=380), use_container_width=True)
-    takeaway("SibSp, Parch, and FamilySize are perfectly collinear (VIF = infinite) — never train a model with all three together.")
+    takeaway("SibSp, Parch, and FamilySize overlap completely, so using all three together in a model is not a good idea.")
     what_this_means(
         observation="SibSp, Parch, and FamilySize came back with an infinite VIF score, meaning "
         "they overlap completely.",
@@ -265,10 +265,7 @@ with tab6:
             "A simpler feature set improved generalization while reducing unnecessary complexity.",
             show_icon=False,
         )
-    takeaway(
-        "Every feature was retained or removed based on statistical evidence and engineering judgment "
-        "rather than intuition."
-    )
+    takeaway("Each feature was kept or removed based on the analysis, not assumptions.")
     what_this_means(
         observation="Statistical tests, mutual information, and the VIF check narrowed the "
         "feature list from 11 down to 8.",

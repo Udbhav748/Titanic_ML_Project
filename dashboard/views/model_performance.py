@@ -94,7 +94,7 @@ with tab1:
             "- Gradient Boosting edges it only on precision (0.783 vs. 0.760)\n"
             "- Random Forest is the weakest model on every metric, despite sharing the same 8-feature schema"
         )
-    takeaway("Performance alone favors Logistic Regression, but the margin is modest — stability and generalization matter just as much.")
+    takeaway("Logistic Regression scores best overall, but the lead is small, so stability mattered just as much as raw performance.")
     what_this_means(
         observation="Logistic Regression came out ahead on 4 of the 5 metrics we tracked, with "
         "Gradient Boosting only winning on precision.",
@@ -119,7 +119,7 @@ with tab2:
             "- Logistic Regression's worst fold still beats the median fold of both tree ensembles\n"
             "- The baseline has the widest spread despite being the only tuned model"
         )
-    takeaway("Tight variance without a competitive score isn't real stability — it's consistency around a weaker answer.")
+    takeaway("Low variance only matters if the score behind it is actually good, not just consistent.")
     what_this_means(
         observation="Even Logistic Regression's worst fold in cross-validation beat the typical "
         "fold from the two tree based models.",
@@ -141,7 +141,7 @@ with tab3:
             "- Logistic Regression is the only model where test F1 does not drop below train F1\n"
             "- Gradient Boosting overfits less severely; the tuned baseline overfits least of the three ensembles"
         )
-    takeaway("Only Logistic Regression generalizes with no overfitting signature — the rest memorize to varying degrees.")
+    takeaway("Logistic Regression is the only model that performs the same on training and test data. The others memorized patterns instead of learning them.")
     what_this_means(
         observation="Random Forest scored 0.255 higher on training data than on test data, "
         "while Logistic Regression scored about the same on both.",
@@ -181,7 +181,7 @@ with tab4:
             "- 18 false positives vs. 12 false negatives — the production model leans toward predicting survival, "
             "consistent with the balanced class weighting"
         )
-    takeaway("ROC-AUC alone would have made this a close call — a 0.026 spread is not a decisive signal by itself.")
+    takeaway("ROC-AUC alone barely separates the models, so it wasn't enough on its own to pick a winner.")
     what_this_means(
         observation="All four models' ROC curves sit close together, and our model produces "
         "more false positives than false negatives.",
@@ -210,7 +210,7 @@ with tab5:
             "- Random Forest and Gradient Boosting fall visibly behind past recall 0.5\n"
             "- Under this class imbalance, the Precision-Recall gap is wider and clearer than the ROC gap"
         )
-    takeaway("PR analysis reinforces the ROC comparison and carries more weight under a 62/38 class imbalance.")
+    takeaway("The precision-recall curve backs up the ROC results, and matters more given our class imbalance.")
     what_this_means(
         observation="Logistic Regression stays at or above the other models across most of "
         "the recall range.",
@@ -236,7 +236,7 @@ with tab6:
             "- The mid-range (0.3-0.5) sits above the diagonal — the model is somewhat overconfident for borderline passengers\n"
             "- The Brier score beats the always-predict-base-rate score by a wide margin"
         )
-    takeaway("Well-calibrated at the extremes, mildly overconfident mid-range — not worth recalibrating on a 179-row test set.")
+    takeaway("The model's confidence lines up well at the extremes, with slight overconfidence in the middle range. That's not worth fixing on a small test set.")
     what_this_means(
         observation="Predicted probabilities match real outcomes closely at the extremes, but "
         "run a bit too confident in the 0.3 to 0.5 range.",
@@ -271,7 +271,7 @@ with tab7:
             "- That gap is noise on a 179-row test set, not a meaningful signal\n"
             "- Precision and recall trade off smoothly, with no cliff that would justify moving off 0.50"
         )
-    takeaway("The default 0.50 threshold stays in production — the theoretical optimum is within measurement noise.")
+    takeaway("The default threshold of 0.50 stays in production, since the theoretical best value is too close to call a real improvement.")
     what_this_means(
         observation=f"The best F1 score shows up at a threshold of {thresholds[best_idx]:.2f}, "
         "just 0.005 above the default of 0.50.",
@@ -307,7 +307,7 @@ with tab8:
             "Fare and Has Cabin, so the model leans on those when Pclass is shuffled\n"
             "- Family Size's coefficient fits a straight line through a relationship that isn't actually linear"
         )
-    takeaway("Ranking differences trace back to the same correlated features the multicollinearity analysis already flagged.")
+    takeaway("The ranking differences come from the same overlapping features the multicollinearity check already flagged.")
     what_this_means(
         observation="Sex and Title top both the coefficient view and the permutation importance "
         "view, which measures a feature's importance by seeing how much performance drops "
@@ -404,30 +404,36 @@ st.write("")
 st.markdown("**3. Model Selection Strategy**")
 with st.container(border=True, key="card-selection-strategy"):
     st.markdown(
-        "- **Train/Test Split**: 80/20 stratified split, identical across all four models\n"
-        "- **Cross-Validation Method**: Stratified 5-fold cross-validation\n"
-        "- **Hyperparameter Optimization**: RandomizedSearchCV for the baseline; fixed, documented "
-        "configurations for the three candidates\n"
-        "- **Performance Metrics**: Accuracy, Precision, Recall, F1, and ROC-AUC on the test set, plus "
-        "5-fold CV F1 for stability\n"
-        "- **Final Selection Criteria**: Best test performance, no overfitting signature, faster inference, "
-        "and full interpretability"
+        "- **Train/Test Split**: An 80/20 stratified split was used for all four models to "
+        "ensure a fair comparison.\n"
+        "- **Cross Validation**: Stratified 5 fold cross validation was used to evaluate model "
+        "stability across different data splits.\n"
+        "- **Hyperparameter Optimization**: The baseline model was optimized using "
+        "RandomizedSearchCV, while the three candidate models used fixed and documented "
+        "configurations for a consistent comparison.\n"
+        "- **Performance Metrics**: Models were evaluated using Accuracy, Precision, Recall, "
+        "F1 Score, ROC AUC, and the average 5 fold cross validation F1 Score.\n"
+        "- **Final Selection Criteria**: The final model was selected based on overall test "
+        "performance, generalization, inference speed, and interpretability."
     )
 
 st.divider()
-st.subheader("Why Logistic Regression Fits This Data")
+st.subheader("Why Logistic Regression Was the Best Choice")
 with st.container(border=True, key="card-why-fits"):
     st.markdown(
-        "- **Feature set reduced from 11 to 8** — every remaining feature carries real signal, and a linear "
-        "model has no way to route around noisy ones the way a tree can\n"
-        "- **Multicollinearity removed** — sibling/spouse count, parent/child count, and family size were "
-        "perfectly collinear; keeping only Family Size gives the model one clean coefficient instead of three "
-        "competing for the same variance\n"
-        "- **Fare's skew corrected** — a log transform fixed Fare's heavy right skew, satisfying the roughly-linear "
-        "relationship Logistic Regression assumes between a feature and log-odds\n"
-        "- **A simple decision boundary was enough** — survival is driven by a handful of dominant factors "
-        "(Sex, Passenger Class, Title, Fare), not subtle interactions, so a linear boundary fit as well as a "
-        "non-linear one\n"
-        "- **Confirmed by generalization** — it is the only model with no overfitting signature, evidence that "
-        "its capacity actually matched the complexity in the data"
+        "- **Cleaner Feature Set**: The feature set was reduced from 11 to 8 after statistical "
+        "analysis and feature selection. This removed unnecessary information and allowed the "
+        "model to focus on features that genuinely contributed to prediction.\n"
+        "- **Reduced Multicollinearity**: Sibling or Spouse Count, Parent or Child Count, and "
+        "Family Size contained overlapping information. Keeping only Family Size removed "
+        "redundancy and provided a cleaner input for the model.\n"
+        "- **Improved Feature Distribution**: Fare had a heavily skewed distribution. Applying "
+        "a log transformation made it more balanced, helping Logistic Regression learn more "
+        "effectively.\n"
+        "- **Simple Relationships in the Data**: Survival was mainly influenced by a few strong "
+        "factors such as Sex, Passenger Class, Title, and Fare. These relationships were largely "
+        "linear, making Logistic Regression a good fit without requiring a more complex model.\n"
+        "- **Better Generalization**: Logistic Regression achieved the best balance between "
+        "training and test performance. Unlike the tree based models, it showed no clear signs "
+        "of overfitting, indicating that its complexity matched the dataset well."
     )
