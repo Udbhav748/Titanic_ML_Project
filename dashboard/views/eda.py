@@ -53,16 +53,18 @@ with tab1:
     if metric == "Fare":
         takeaway("Fare separates outcomes more cleanly than Age, and is heavily right-skewed — log-transformed inside the model pipeline.")
         what_this_means(
-            observation="Fare is heavily right-skewed, with a long tail of high-paying passengers.",
-            impact="A skewed input like this can distort a linear model's coefficients.",
-            decision="Fare is log-transformed before it reaches the model.",
+            observation="Most passengers paid a low fare, but a small group paid a lot more, "
+            "giving the chart a long tail.",
+            impact="Skewed data like this can throw off a linear model, since it works best "
+            "when values are spread out more evenly.",
+            decision="We applied a log transform to Fare before feeding it into the model.",
         )
     else:
         takeaway("Age distributions look similar between groups except for a small child survival spike.")
         what_this_means(
-            observation="Age distributions for survivors and non-survivors mostly overlap, aside "
-            "from a small child survival spike.",
-            impact="On its own, Age doesn't separate the outcome cleanly.",
+            observation="People who survived and people who didn't show very similar age "
+            "patterns, apart from a small bump in survival among young children.",
+            impact="Age on its own does not split the two outcomes very well.",
         )
 
 with tab2:
@@ -106,23 +108,26 @@ with tab2:
     SURVIVAL_WTM = {
         "Sex": dict(
             observation="Women survived at a much higher rate than men.",
-            impact="Sex is one of the cleanest single splits in the whole dataset.",
-            decision="Sex was kept as a core feature in the production model.",
+            impact="This is one of the clearest patterns in the entire dataset.",
+            decision="Sex was kept as one of the core features in the final model.",
         ),
         "Pclass": dict(
-            observation="Survival rate drops sharply from 1st to 3rd class.",
-            impact="Ticket class acts as a proxy for socioeconomic status and deck location.",
-            decision="Passenger Class was kept as a core feature.",
+            observation="Survival drops sharply as you go from 1st class to 3rd class.",
+            impact="Ticket class works as a stand in for wealth and where a passenger's cabin "
+            "sat on the ship.",
+            decision="Passenger Class stayed in as a core feature.",
         ),
         "Title": dict(
-            observation="Titles like Mrs and Miss survive far more often than Mr.",
-            impact="Title captures sex, age, and social status in a single field.",
-            decision="Title was engineered from the Name field and kept in the final schema.",
+            observation="Passengers with the title Mrs or Miss survived far more often than "
+            "those with Mr.",
+            impact="Title bundles sex, age, and social status into one field.",
+            decision="We engineered Title from the passenger's name and kept it in the final "
+            "feature set.",
         ),
         "Embarked": dict(
-            observation="Survival rate varies by port of embarkation, though less sharply than "
-            "by Sex or Class.",
-            impact="The effect is real but smaller than the other predictors.",
+            observation="Survival rate does shift depending on which port a passenger boarded "
+            "at, but not as much as with Sex or Class.",
+            impact="It's a real pattern, just a smaller one than the other features.",
         ),
     }
     what_this_means(**SURVIVAL_WTM[factor])
@@ -138,10 +143,12 @@ with tab3:
         st.plotly_chart(style_fig(fig, height=480), use_container_width=True)
     takeaway("FamilySize correlates strongly with both SibSp and Parch, and FarePerPerson tracks Fare almost 1:1 — exactly the redundancy VIF quantifies next.")
     what_this_means(
-        observation="FamilySize correlates strongly with both SibSp and Parch, and FarePerPerson "
-        "tracks Fare almost 1:1.",
-        impact="Redundant features like these inflate variance without adding new signal.",
-        decision="This is exactly what the VIF check quantifies next, before anything gets dropped.",
+        observation="FamilySize moves closely with SibSp and Parch, and FarePerPerson tracks "
+        "Fare almost exactly.",
+        impact="When features move together this closely, they are mostly repeating the same "
+        "information.",
+        decision="We looked at this more closely with a VIF check, a way of measuring how much "
+        "features overlap, before deciding what to drop.",
     )
 
 with tab4:
@@ -154,11 +161,11 @@ with tab4:
         st.plotly_chart(style_fig(fig, height=350), use_container_width=True)
     takeaway("Sex sets the baseline; class reshapes it unevenly — 1st-class women survive at 97%, even 1st-class men only reach 37%.")
     what_this_means(
-        observation="Class and Sex interact — 1st-class women survive at 97%, but 1st-class men "
-        "only reach 37%.",
-        impact="Neither feature alone explains survival as well as the two together.",
-        decision="This is part of why both Sex and Pclass were kept as separate features instead "
-        "of being collapsed into one.",
+        observation="Class changes how much Sex matters, since 1st class women survived 97% "
+        "of the time while 1st class men only survived 37% of the time.",
+        impact="Sex and Class tell a fuller story together than either one does on its own.",
+        decision="That's part of why we kept Sex and Pclass as two separate features instead "
+        "of merging them.",
     )
 
 with tab5:
@@ -182,9 +189,10 @@ with tab5:
         st.plotly_chart(style_fig(fig, height=380), use_container_width=True)
     takeaway("SibSp, Parch, and FamilySize are perfectly collinear (VIF = infinite) — never train a model with all three together.")
     what_this_means(
-        observation="SibSp, Parch, and FamilySize show infinite VIF — they're perfectly collinear.",
-        impact="Feeding a linear model all three would make its coefficients unstable and hard to trust.",
-        decision="Only FamilySize was kept; SibSp and Parch were dropped from the production schema.",
+        observation="SibSp, Parch, and FamilySize came back with an infinite VIF score, meaning "
+        "they overlap completely.",
+        impact="Putting all three into a linear model would make its coefficients unreliable.",
+        decision="We kept FamilySize and dropped SibSp and Parch from the final feature set.",
     )
 
 with tab6:
@@ -262,10 +270,10 @@ with tab6:
         "rather than intuition."
     )
     what_this_means(
-        observation="Statistical testing, mutual information, and the VIF check together cut the "
-        "candidate set from 11 features to 8.",
-        impact="Every removed feature was either redundant or added little predictive value for "
-        "its engineering cost.",
-        decision="The final 8-feature schema is what's used for both training and every prediction "
-        "in this dashboard.",
+        observation="Statistical tests, mutual information, and the VIF check narrowed the "
+        "feature list from 11 down to 8.",
+        impact="Each feature we cut was either repeating information or barely helping the "
+        "model, so it wasn't worth the extra complexity.",
+        decision="Those 8 features are what the model is trained on and what powers every "
+        "prediction in this dashboard.",
     )

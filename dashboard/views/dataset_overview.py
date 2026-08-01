@@ -106,11 +106,11 @@ takeaway(
     "preprocessing without affecting the overall dataset quality."
 )
 what_this_means(
-    observation="Cabin is missing for 77% of passengers, and Age for about 20%.",
-    impact="77% missing is too much to impute reliably, but the fact that a cabin was "
-    "recorded at all still carries information.",
-    decision="Cabin became a Has Cabin flag instead of being dropped, and Age was imputed "
-    "rather than removed.",
+    observation="Cabin is missing for 77% of passengers, and Age is missing for about 20%.",
+    impact="Cabin is missing too often to fill in with a guess, but knowing whether a cabin "
+    "was recorded at all still tells us something.",
+    decision="We turned Cabin into a simple yes or no flag and filled in the missing Age "
+    "values instead of dropping them.",
 )
 
 st.divider()
@@ -151,11 +151,11 @@ with st.container(border=True, key="card-target-dist"):
 
 takeaway("The dataset is moderately imbalanced, with approximately 62% of passengers not surviving and 38% surviving.")
 what_this_means(
-    observation="About 62% of passengers didn't survive, versus 38% who did.",
-    impact="That's an imbalance worth tracking — a model that always predicts \"died\" "
-    "would already look 62% accurate.",
-    decision="Accuracy is reported alongside F1 and ROC-AUC throughout this dashboard, "
-    "never on its own.",
+    observation="About 62% of passengers did not survive, and 38% did.",
+    impact="With this kind of imbalance, a model could look 62% accurate just by guessing "
+    "\"did not survive\" every time.",
+    decision="That's why we always check F1 score and ROC-AUC alongside accuracy instead "
+    "of relying on accuracy alone.",
 )
 
 st.divider()

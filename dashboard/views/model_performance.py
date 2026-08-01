@@ -96,12 +96,12 @@ with tab1:
         )
     takeaway("Performance alone favors Logistic Regression, but the margin is modest — stability and generalization matter just as much.")
     what_this_means(
-        observation="Logistic Regression leads on 4 of 5 metrics; Gradient Boosting only edges "
-        "it out on precision.",
-        impact="The gap between the top models is real but modest, so performance alone isn't "
-        "a strong enough reason to pick one.",
-        decision="Logistic Regression was selected once stability and generalization were "
-        "factored in too.",
+        observation="Logistic Regression came out ahead on 4 of the 5 metrics we tracked, with "
+        "Gradient Boosting only winning on precision.",
+        impact="The lead is real, but small enough that performance alone doesn't settle which "
+        "model to use.",
+        decision="We picked Logistic Regression after also weighing how stable and generalizable "
+        "it was, not just its raw score.",
     )
 
 with tab2:
@@ -121,10 +121,11 @@ with tab2:
         )
     takeaway("Tight variance without a competitive score isn't real stability — it's consistency around a weaker answer.")
     what_this_means(
-        observation="Logistic Regression's worst fold still beats the median fold of both tree ensembles.",
-        impact="Tight variance doesn't mean much if it's tight around a weaker score.",
-        decision="Consistent tree-ensemble scores were not treated as a reason to prefer them "
-        "over Logistic Regression.",
+        observation="Even Logistic Regression's worst fold in cross-validation beat the typical "
+        "fold from the two tree based models.",
+        impact="Being consistent only matters if you're consistently good, not consistently average.",
+        decision="That ruled out picking a tree model just because its scores looked more "
+        "stable fold to fold.",
     )
 
 with tab3:
@@ -142,11 +143,12 @@ with tab3:
         )
     takeaway("Only Logistic Regression generalizes with no overfitting signature — the rest memorize to varying degrees.")
     what_this_means(
-        observation="Random Forest's train F1 is 0.255 higher than its test F1; Logistic Regression "
-        "shows no such gap.",
-        impact="That gap is a classic overfitting signature — the tree memorized the training set.",
-        decision="The lack of an overfitting signature was one of the deciding factors for "
-        "shipping Logistic Regression.",
+        observation="Random Forest scored 0.255 higher on training data than on test data, "
+        "while Logistic Regression scored about the same on both.",
+        impact="That gap for Random Forest is a sign it memorized the training data instead "
+        "of learning patterns that generalize.",
+        decision="Logistic Regression's lack of that gap was a big part of why we shipped it "
+        "to production.",
     )
 
 with tab4:
@@ -181,11 +183,12 @@ with tab4:
         )
     takeaway("ROC-AUC alone would have made this a close call — a 0.026 spread is not a decisive signal by itself.")
     what_this_means(
-        observation="All four ROC curves cluster tightly, and the model has more false positives "
-        "than false negatives.",
-        impact="A 0.026 AUC spread between the best and worst model isn't a decisive signal by itself.",
-        decision="The false-positive lean matches the balanced class weighting used during "
-        "training, so it wasn't adjusted further.",
+        observation="All four models' ROC curves sit close together, and our model produces "
+        "more false positives than false negatives.",
+        impact="A gap of 0.026 in ROC-AUC between the best and worst model is too small to "
+        "call a clear winner on its own.",
+        decision="The false positive tendency lines up with the balanced class weighting we "
+        "used during training, so we left it as is.",
     )
 
 with tab5:
@@ -209,11 +212,12 @@ with tab5:
         )
     takeaway("PR analysis reinforces the ROC comparison and carries more weight under a 62/38 class imbalance.")
     what_this_means(
-        observation="Logistic Regression tracks at or above the other models through most of "
+        observation="Logistic Regression stays at or above the other models across most of "
         "the recall range.",
-        impact="Under this class imbalance, the Precision-Recall gap is a clearer signal than "
-        "the ROC gap.",
-        decision="It reinforces the ROC comparison rather than changing the model choice.",
+        impact="With our class imbalance, this precision recall gap tells us more than the "
+        "ROC gap does.",
+        decision="It backed up the same conclusion as the ROC comparison rather than changing "
+        "our pick.",
     )
 
 with tab6:
@@ -234,12 +238,12 @@ with tab6:
         )
     takeaway("Well-calibrated at the extremes, mildly overconfident mid-range — not worth recalibrating on a 179-row test set.")
     what_this_means(
-        observation="Predicted probabilities track observed outcomes closely, except for some "
-        "overconfidence in the 0.3-0.5 range.",
-        impact="Overconfidence in the middle range matters if the probability itself is shown "
-        "to a user, not just the final label.",
-        decision="Recalibration wasn't worth it on a 179-row test set, so the raw probabilities "
-        "are shown as-is.",
+        observation="Predicted probabilities match real outcomes closely at the extremes, but "
+        "run a bit too confident in the 0.3 to 0.5 range.",
+        impact="That matters most if we're showing the probability itself to a user, not just "
+        "a survived or did not survive label.",
+        decision="With only 179 test rows, recalibrating wasn't worth it, so we show the raw "
+        "probabilities as they are.",
     )
 
 with tab7:
@@ -269,10 +273,10 @@ with tab7:
         )
     takeaway("The default 0.50 threshold stays in production — the theoretical optimum is within measurement noise.")
     what_this_means(
-        observation=f"The best F1 threshold is {thresholds[best_idx]:.2f}, only 0.005 better "
-        "than the default 0.50.",
-        impact="That's noise on a 179-row test set, not a meaningful improvement.",
-        decision="The default 0.50 threshold stays in production.",
+        observation=f"The best F1 score shows up at a threshold of {thresholds[best_idx]:.2f}, "
+        "just 0.005 above the default of 0.50.",
+        impact="A difference that small is noise on a 179-row test set, not a real improvement.",
+        decision="We kept the default 0.50 threshold in production.",
     )
 
 with tab8:
@@ -305,11 +309,13 @@ with tab8:
         )
     takeaway("Ranking differences trace back to the same correlated features the multicollinearity analysis already flagged.")
     what_this_means(
-        observation="Sex and Title dominate both the coefficient and permutation-importance views.",
-        impact="Pclass ranks lower by permutation importance because its signal overlaps with "
-        "Fare and Has Cabin.",
-        decision="That overlap is the same multicollinearity the VIF check flagged earlier, "
-        "not a new problem.",
+        observation="Sex and Title top both the coefficient view and the permutation importance "
+        "view, which measures a feature's importance by seeing how much performance drops "
+        "without it.",
+        impact="Pclass ranks lower on permutation importance because Fare and Has Cabin already "
+        "carry some of the same information.",
+        decision="That overlap is the same multicollinearity issue the VIF check caught "
+        "earlier, not a new one.",
     )
 
 st.divider()
@@ -387,11 +393,11 @@ for col, r in zip(hp_cols, results):
             st.markdown("\n".join(f"- {p}" for p in HYPERPARAMETERS[r["name"]]))
 
 what_this_means(
-    observation="Only the baseline Random Forest was tuned with RandomizedSearchCV; the three "
-    "candidates use fixed configurations.",
-    impact="That means Logistic Regression won without ever getting its own hyperparameter search.",
-    decision="This makes the comparison harder to argue with — the simplest model won on an "
-    "uneven playing field, in its own favor.",
+    observation="Only the baseline Random Forest went through a hyperparameter search called "
+    "RandomizedSearchCV, while the other three models ran with fixed settings.",
+    impact="Logistic Regression won that comparison without ever being tuned in its favor.",
+    decision="That makes the case for Logistic Regression stronger, since it was not given "
+    "any extra advantage.",
 )
 
 st.write("")
