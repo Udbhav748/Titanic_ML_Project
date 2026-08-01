@@ -312,8 +312,3 @@ Interactive docs are available at `/docs` once the API is running, or try the [l
 
 [MIT](LICENSE)
 
-## Contact
-
-- GitHub: [Udbhav748](https://github.com/Udbhav748)
-- LinkedIn: _add your LinkedIn URL here_
-- Email: _add your contact email here_
