@@ -10,17 +10,63 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from data_utils import load_raw
-from theme import CARD_BORDER, ERROR, PRIMARY, SECONDARY, TEXT_MUTED, page_header, style_fig, takeaway
+from theme import (
+    CARD_BORDER,
+    ERROR,
+    PRIMARY,
+    SECONDARY,
+    TEXT_MUTED,
+    TEXT_PRIMARY,
+    page_header,
+    style_fig,
+    takeaway,
+)
 
 raw = load_raw()
 
 page_header("Data Overview", "The raw Titanic passenger manifest used to train and validate the model.")
 
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Rows", f"{raw.shape[0]:,}")
-c2.metric("Columns", raw.shape[1])
-c3.metric("Duplicate Rows", int(raw.duplicated().sum()))
-c4.metric("Survival Rate", f"{raw['Survived'].mean():.1%}")
+# Bold, high-contrast fills for the four summary metric boxes only —
+# solid saturated backgrounds with white text instead of pastel tints.
+st.markdown(
+    """
+    <style>
+        .st-key-metric-row-top [data-testid="stColumn"]:nth-of-type(1) [data-testid="stMetric"] {
+            background-color: #2563EB !important;
+        }
+        .st-key-metric-row-top [data-testid="stColumn"]:nth-of-type(2) [data-testid="stMetric"] {
+            background-color: #10B981 !important;
+        }
+        .st-key-metric-row-top [data-testid="stColumn"]:nth-of-type(3) [data-testid="stMetric"] {
+            background-color: #F59E0B !important;
+        }
+        .st-key-metric-row-top [data-testid="stColumn"]:nth-of-type(4) [data-testid="stMetric"] {
+            background-color: #8B5CF6 !important;
+        }
+        .st-key-metric-row-top [data-testid="stMetric"] [data-testid="stMetricLabel"],
+        .st-key-metric-row-top [data-testid="stMetric"] [data-testid="stMetricValue"] {
+            color: white !important;
+        }
+        div[class*="st-key-card-core-features"] {
+            background-color: #06B6D4 !important;
+        }
+        div[class*="st-key-card-engineered-features"] {
+            background-color: #8B5CF6 !important;
+        }
+        div[class*="st-key-card-core-features"] *,
+        div[class*="st-key-card-engineered-features"] * {
+            color: white !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+with st.container(key="metric-row-top"):
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Rows", f"{raw.shape[0]:,}")
+    c2.metric("Columns", raw.shape[1])
+    c3.metric("Duplicate Rows", int(raw.duplicated().sum()))
+    c4.metric("Survival Rate", f"{raw['Survived'].mean():.1%}")
 
 st.divider()
 st.subheader("Dataset Preview")
@@ -46,13 +92,13 @@ with summary_col:
     n_incomplete = int(has_missing.sum())
     top_feature, top_pct = missing_pct.index[0], missing_pct.iloc[0]
     completeness = 100 - (raw.isna().sum().sum() / raw.size * 100)
-    with st.container(border=True, height=380):
+    with st.container(border=True, height=380, key="card-missing-summary"):
         st.markdown(f"<div style='color:{TEXT_MUTED}; font-size:0.85rem;'>Features with Missing Values</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size:1.4rem; font-weight:700; color:#14213D; margin-bottom:1rem;'>{n_incomplete}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size:1.4rem; font-weight:700; color:{TEXT_PRIMARY}; margin-bottom:1rem;'>{n_incomplete}</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='color:{TEXT_MUTED}; font-size:0.85rem;'>Most Incomplete Feature</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size:1.4rem; font-weight:700; color:#14213D; margin-bottom:1rem;'>{top_feature} ({top_pct:.0f}%)</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size:1.4rem; font-weight:700; color:{TEXT_PRIMARY}; margin-bottom:1rem;'>{top_feature} ({top_pct:.0f}%)</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='color:{TEXT_MUTED}; font-size:0.85rem;'>Overall Dataset Completeness</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size:1.4rem; font-weight:700; color:#14213D;'>{completeness:.1f}%</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size:1.4rem; font-weight:700; color:{TEXT_PRIMARY};'>{completeness:.1f}%</div>", unsafe_allow_html=True)
 
 takeaway(
     "Missing values are concentrated in only a small number of features, enabling targeted "
@@ -65,7 +111,7 @@ counts = raw["Survived"].value_counts().sort_index()
 labels = ["Did Not Survive", "Survived"]
 pct_values = counts.values / counts.sum() * 100
 
-with st.container(border=True):
+with st.container(border=True, key="card-target-dist"):
     _, chart_col, _ = st.columns([1, 4, 1])
     with chart_col:
         fig = go.Figure()
@@ -75,7 +121,7 @@ with st.container(border=True):
             marker_cornerradius=8,
             text=[f"{c:,}" for c in counts.values],
             textposition="outside",
-            textfont=dict(size=15, color="#14213D"),
+            textfont=dict(size=15, color=TEXT_PRIMARY),
             hovertemplate="<b>%{x}</b><br>%{y:,} passengers<extra></extra>",
         ))
         for label, count, pct in zip(labels, counts.values, pct_values):
@@ -91,7 +137,7 @@ with st.container(border=True):
         fig.update_xaxes(showline=True, linecolor=CARD_BORDER, ticks="", title=None, tickfont=dict(size=14))
         fig.update_yaxes(
             showticklabels=False, title="Passengers", showline=True, linecolor=CARD_BORDER,
-            showgrid=True, gridcolor="#F0F0F0", zeroline=False,
+            showgrid=True, gridcolor="#F1F5F9", zeroline=False,
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -115,7 +161,7 @@ st.divider()
 st.subheader("Features Used for Prediction")
 core_col, eng_col = st.columns(2)
 with core_col:
-    with st.container(border=True):
+    with st.container(border=True, key="card-core-features"):
         st.markdown("**Core Features**")
         st.markdown(
             "- Passenger Class\n"
@@ -125,7 +171,7 @@ with core_col:
             "- Embarked"
         )
 with eng_col:
-    with st.container(border=True):
+    with st.container(border=True, key="card-engineered-features"):
         st.markdown("**Engineered Features**")
         st.markdown(
             "- Family Size\n"

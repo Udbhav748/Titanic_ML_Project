@@ -2,19 +2,21 @@
 import plotly.graph_objects as go
 import streamlit as st
 
-PRIMARY = "#1F4E79"
-SECONDARY = "#5B6572"
-SUCCESS = "#2E7D32"
-WARNING = "#F9A825"
-ERROR = "#C62828"
-TERTIARY = "#1BAF7A"
-QUATERNARY = "#6B4FBB"
-BACKGROUND = "#FAFAFA"
-CARD_BORDER = "#E2E5E9"
-TEXT_MUTED = "#5B6572"
+PRIMARY = "#2563EB"
+SECONDARY = "#6B7280"
+SUCCESS = "#10B981"
+WARNING = "#F59E0B"
+ERROR = "#EF4444"
+TERTIARY = "#06B6D4"
+QUATERNARY = "#8B5CF6"
+BACKGROUND = "#FFFFFF"
+CARD_SURFACE = "#F8FAFC"
+CARD_BORDER = "#E5E7EB"
+TEXT_MUTED = "#6B7280"
+TEXT_PRIMARY = "#111827"
 
-CATEGORICAL = [PRIMARY, SECONDARY, "#7A9CBF", "#A6ADB4", "#3D6E94"]
-DIVERGING = [ERROR, "#F0EFEC", PRIMARY]
+CATEGORICAL = [PRIMARY, SECONDARY, TERTIARY, QUATERNARY, "#3D6E94"]
+DIVERGING = [ERROR, "#F3F4F6", PRIMARY]
 
 # Fixed hue assignment for the 4 models compared in Stage 4 — reused everywhere
 # the dashboard overlays or groups all four together, so a model's color never
@@ -40,10 +42,16 @@ CSS = f"""
         max-width: 1200px;
     }}
     div[data-testid="stMetric"] {{
-        background-color: white;
+        background-color: {CARD_SURFACE};
         border: 1px solid {CARD_BORDER};
-        border-radius: 8px;
+        border-radius: 10px;
         padding: 1rem 1.1rem;
+        box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+        transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }}
+    div[data-testid="stMetric"]:hover {{
+        box-shadow: 0 4px 10px rgba(17, 24, 39, 0.07);
+        border-color: {PRIMARY}40;
     }}
     div[data-testid="stMetricLabel"] {{
         color: {TEXT_MUTED};
@@ -54,51 +62,76 @@ CSS = f"""
         text-overflow: unset !important;
         font-size: 1.4rem !important;
         line-height: 1.7rem !important;
+        color: {TEXT_PRIMARY} !important;
     }}
     div[data-testid="stMetricValue"] > div {{
         white-space: normal !important;
         overflow: visible !important;
         text-overflow: unset !important;
     }}
+
+    /* Bordered containers tagged key="card-..." across every page — one rule
+       styles every card without touching Streamlit's internal DOM structure. */
+    div[class*="st-key-card-"] {{
+        background-color: {CARD_SURFACE} !important;
+        border: 1px solid {CARD_BORDER} !important;
+        border-radius: 12px !important;
+        box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04), 0 1px 3px rgba(17, 24, 39, 0.05) !important;
+        transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }}
+    div[class*="st-key-card-"]:hover {{
+        box-shadow: 0 6px 16px rgba(17, 24, 39, 0.08), 0 2px 4px rgba(17, 24, 39, 0.06) !important;
+        border-color: {PRIMARY}40 !important;
+        transform: translateY(-1px);
+    }}
+
     .card {{
-        background-color: white;
+        background-color: {CARD_SURFACE};
         border: 1px solid {CARD_BORDER};
-        border-radius: 8px;
+        border-radius: 12px;
         padding: 1.25rem 1.5rem;
         margin-bottom: 0.75rem;
+        box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
     }}
     h1, h2, h3 {{
-        color: #14213D;
+        color: {TEXT_PRIMARY};
     }}
     .takeaway {{
-        background-color: #F0F4F8;
+        background-color: #EFF6FF;
         border-left: 3px solid {PRIMARY};
         padding: 0.7rem 1rem;
-        border-radius: 4px;
+        border-radius: 6px;
         margin-top: 0.5rem;
     }}
     .flow-step {{
-        background-color: white;
+        background-color: {CARD_SURFACE};
         border: 1px solid {PRIMARY};
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 0.5rem 1rem;
         text-align: center;
         font-weight: 500;
-        color: #14213D;
+        color: {TEXT_PRIMARY};
         max-width: 420px;
         margin: 0 auto;
+        box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
     }}
     .flow-step-h {{
-        background-color: white;
+        background-color: {CARD_SURFACE};
         border: 1px solid {PRIMARY};
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 0.45rem 0.5rem;
         text-align: center;
         font-weight: 500;
         font-size: 0.85rem;
-        color: #14213D;
+        color: {TEXT_PRIMARY};
         overflow-wrap: normal;
         word-break: keep-all;
+        box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
     }}
     .flow-arrow {{
         text-align: center;
@@ -112,6 +145,29 @@ CSS = f"""
         font-size: 1.1rem;
         padding-top: 0.6rem;
     }}
+
+    /* Buttons and nav links — styling only, no behavior change */
+    div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {{
+        border-radius: 8px;
+        transition: box-shadow 0.15s ease, transform 0.15s ease;
+    }}
+    div[data-testid="stButton"] button:hover, div[data-testid="stFormSubmitButton"] button:hover {{
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.18);
+        transform: translateY(-1px);
+    }}
+    div[data-testid="stFormSubmitButton"] button[kind="primary"] {{
+        background-color: {PRIMARY};
+        border-color: {PRIMARY};
+    }}
+    a[data-testid="stPageLink-NavLink"] {{
+        border-radius: 8px;
+        transition: background-color 0.15s ease;
+    }}
+
+    /* Hide the anchor-link icon Streamlit adds next to headings on hover */
+    [data-testid="stHeaderActionElements"] {{
+        display: none !important;
+    }}
 </style>
 """
 
@@ -124,31 +180,39 @@ def style_fig(fig: go.Figure, height: int = 380) -> go.Figure:
     """Apply one consistent Plotly layout across every chart in the app."""
     fig.update_layout(
         height=height,
-        font=dict(family="sans-serif", size=13, color="#14213D"),
+        font=dict(family="sans-serif", size=13, color=TEXT_PRIMARY),
         plot_bgcolor="white",
         paper_bgcolor="white",
         margin=dict(l=10, r=10, t=40, b=40),
         legend=dict(orientation="h", yanchor="top", y=-0.18, xanchor="left", x=0),
     )
     fig.update_xaxes(showgrid=False, showline=True, linecolor=CARD_BORDER)
-    fig.update_yaxes(showgrid=True, gridcolor="#F0F0F0", zeroline=False)
+    fig.update_yaxes(showgrid=True, gridcolor="#F1F5F9", zeroline=False)
     return fig
 
 
-def metric_card(label: str, value: str, height: int = 100) -> None:
+def _slugify(text: str) -> str:
+    return "".join(c.lower() if c.isalnum() else "-" for c in text).strip("-")
+
+
+def metric_card(label: str, value: str, height: int = 100, compact: bool = False) -> None:
     """Equal-height metric card — use inside a column for a snapshot grid."""
-    with st.container(border=True, height=height):
-        st.markdown(f"<div style='color:{TEXT_MUTED}; font-size:0.85rem;'>{label}</div>", unsafe_allow_html=True)
+    label_size = "0.72rem" if compact else "0.85rem"
+    value_size = "1.05rem" if compact else "1.35rem"
+    value_line_height = "1.2rem" if compact else "1.5rem"
+    with st.container(border=True, height=height, key=f"card-metric-{_slugify(label)}"):
+        st.markdown(f"<div style='color:{TEXT_MUTED}; font-size:{label_size};'>{label}</div>", unsafe_allow_html=True)
         st.markdown(
-            f"<div style='font-size:1.35rem; font-weight:700; color:#14213D; line-height:1.5rem;'>{value}</div>",
+            f"<div style='font-size:{value_size}; font-weight:700; color:{TEXT_PRIMARY}; "
+            f"line-height:{value_line_height};'>{value}</div>",
             unsafe_allow_html=True,
         )
 
 
-def highlight_card(icon: str, title: str, text: str, height: int = 165) -> None:
+def highlight_card(icon: str, title: str, text: str, height: int = 165, show_icon: bool = True) -> None:
     """Equal-height highlight card with a Material icon — one sentence only."""
-    with st.container(border=True, height=height):
-        st.markdown(f"**:material/{icon}: {title}**")
+    with st.container(border=True, height=height, key=f"card-highlight-{_slugify(title)}"):
+        st.markdown(f"**:material/{icon}: {title}**" if show_icon else f"**{title}**")
         st.caption(text)
 
 

@@ -17,7 +17,17 @@ from data_utils import (
     load_model_v2,
     load_train_reference,
 )
-from theme import ERROR, PRIMARY, SUCCESS, TEXT_MUTED, WARNING, page_header, probability_bar, style_fig
+from theme import (
+    ERROR,
+    PRIMARY,
+    SUCCESS,
+    TEXT_MUTED,
+    TEXT_PRIMARY,
+    WARNING,
+    page_header,
+    probability_bar,
+    style_fig,
+)
 
 model = load_model_v2()
 
@@ -25,7 +35,6 @@ PCLASS_LABEL = {1: "1st", 2: "2nd", 3: "3rd"}
 EMBARK_LABEL = {"S": "Southampton", "C": "Cherbourg", "Q": "Queenstown"}
 
 page_header("Live Prediction", "Enter passenger details and get a real prediction from the trained model.")
-st.caption("Powered by the production Logistic Regression model.")
 
 with st.form("prediction_form"):
     col1, col2, col3 = st.columns(3)
@@ -183,29 +192,29 @@ if submitted:
     # ============================================================
     st.divider()
     st.subheader("Prediction Summary")
-    with st.container(border=True):
+    with st.container(border=True, key="card-prediction-summary"):
         s1, s2, s3, s4 = st.columns(4)
         with s1:
             st.markdown(f"<div style='color:{TEXT_MUTED}; font-size:0.85rem;'>Prediction</div>", unsafe_allow_html=True)
             st.markdown(
-                f"<div style='font-size:1.3rem; font-weight:700; color:#14213D;'>"
+                f"<div style='font-size:1.3rem; font-weight:700; color:{TEXT_PRIMARY};'>"
                 f"{'Survived' if prediction == 1 else 'Did Not Survive'}</div>", unsafe_allow_html=True,
             )
         with s2:
             st.markdown(f"<div style='color:{TEXT_MUTED}; font-size:0.85rem;'>Probability</div>", unsafe_allow_html=True)
-            st.markdown(f"<div style='font-size:1.3rem; font-weight:700; color:#14213D;'>{probability:.1%}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size:1.3rem; font-weight:700; color:{TEXT_PRIMARY};'>{probability:.1%}</div>", unsafe_allow_html=True)
         with s3:
             st.markdown(f"<div style='color:{TEXT_MUTED}; font-size:0.85rem;'>Confidence</div>", unsafe_allow_html=True)
             st.markdown(f"<div style='font-size:1.3rem; font-weight:700; color:{confidence_color};'>{confidence_label}</div>", unsafe_allow_html=True)
         with s4:
             st.markdown(f"<div style='color:{TEXT_MUTED}; font-size:0.85rem;'>Decision Strength</div>", unsafe_allow_html=True)
-            st.markdown(f"<div style='font-size:1.3rem; font-weight:700; color:#14213D;'>{strength_label}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size:1.3rem; font-weight:700; color:{TEXT_PRIMARY};'>{strength_label}</div>", unsafe_allow_html=True)
 
     # ============================================================
-    # 2. Probability Gauge
+    # 2. Probability
     # ============================================================
     st.write("")
-    st.subheader("Probability Gauge")
+    st.subheader("Probability")
     probability_bar(probability, confidence_color)
     st.caption(f"{probability:.1%} survival probability — {confidence_label} Confidence")
 
@@ -216,14 +225,14 @@ if submitted:
     st.subheader("Feature Contribution Analysis")
     pos_col, neg_col = st.columns(2)
     with pos_col:
-        with st.container(border=True):
+        with st.container(border=True, key="card-positive-contrib"):
             st.markdown("**Positive Contributors**")
             if positive.empty:
                 st.caption("No features push this prediction toward survival.")
             for _, r in positive.iterrows():
                 st.markdown(f"- {r['label']} — {r['relative_pct']:.0f}% ({r['strength']})")
     with neg_col:
-        with st.container(border=True):
+        with st.container(border=True, key="card-negative-contrib"):
             st.markdown("**Negative Contributors**")
             if negative.empty:
                 st.caption("No features push this prediction away from survival.")
@@ -286,7 +295,7 @@ if submitted:
         row = X_train.loc[idx]
         survived = y_train.loc[idx] == 1
         with col:
-            with st.container(border=True):
+            with st.container(border=True, key=f"card-similar-{idx}"):
                 st.markdown(f"**{similarity_pct[i]:.0f}% Similar**")
                 st.caption(
                     f"{row['Sex'].capitalize()}, Age {row['Age']:.0f}, {PCLASS_LABEL[row['Pclass']]} Class, "

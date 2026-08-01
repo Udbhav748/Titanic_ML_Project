@@ -6,45 +6,112 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from theme import BACKGROUND, CARD_BORDER, TEXT_MUTED, highlight_card, page_header, render_flow
+from theme import PRIMARY, QUATERNARY, SUCCESS, TERTIARY, TEXT_PRIMARY, WARNING, highlight_card, page_header
 
 page_header("Project Architecture", "How a prediction moves through the system.")
 
+# Five-color rotation reused across boxes, chips, and Pipeline Components —
+# same box model everywhere (size, padding, radius, shadow untouched).
+PALETTE = [
+    ("#EFF6FF", PRIMARY),
+    ("#ECFDF5", SUCCESS),
+    ("#FFFBEB", WARNING),
+    ("#F5F3FF", QUATERNARY),
+    ("#ECFEFF", TERTIARY),
+]
 
-def render_step_with_subitems(title: str, subitems: list[str]) -> None:
+st.markdown(
+    f"""
+    <style>
+        .arch-step {{
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            text-align: center;
+            font-weight: 500;
+            color: {TEXT_PRIMARY};
+            max-width: 420px;
+            margin: 0 auto;
+            box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+        }}
+        .arch-arrow {{
+            text-align: center;
+            color: #94A3B8;
+            font-size: 1.2rem;
+            line-height: 1.6rem;
+        }}
+        .arch-chip {{
+            display: inline-block;
+            border-radius: 12px;
+            padding: 0.15rem 0.7rem;
+            margin: 0.2rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }}
+        div[class~="st-key-card-highlight-input"] {{ border-top: 4px solid {PRIMARY} !important; }}
+        div[class~="st-key-card-highlight-preprocessing"] {{ border-top: 4px solid {SUCCESS} !important; }}
+        div[class~="st-key-card-highlight-machine-learning-model"] {{ border-top: 4px solid {WARNING} !important; }}
+        div[class~="st-key-card-highlight-prediction-engine"] {{ border-top: 4px solid {QUATERNARY} !important; }}
+        div[class~="st-key-card-highlight-decision-intelligence"] {{ border-top: 4px solid {TERTIARY} !important; }}
+        div[class~="st-key-card-highlight-dashboard"] {{ border-top: 4px solid {PRIMARY} !important; }}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+def render_steps(steps: list[str], start: int) -> int:
+    for i, step in enumerate(steps):
+        bg, border = PALETTE[(start + i) % len(PALETTE)]
+        st.markdown(
+            f"<div class='arch-step' style='background-color:{bg}; border:1px solid {border};'>{step}</div>",
+            unsafe_allow_html=True,
+        )
+        if i < len(steps) - 1:
+            st.markdown("<div class='arch-arrow'>&#8595;</div>", unsafe_allow_html=True)
+    return start + len(steps)
+
+
+def render_step_with_subitems(title: str, subitems: list[str], color_index: int) -> None:
     """A flow step whose box is annotated with the smaller capabilities inside it."""
-    st.markdown(f"<div class='flow-step'>{title}</div>", unsafe_allow_html=True)
+    bg, border = PALETTE[color_index % len(PALETTE)]
+    st.markdown(
+        f"<div class='arch-step' style='background-color:{bg}; border:1px solid {border};'>{title}</div>",
+        unsafe_allow_html=True,
+    )
     chips = "".join(
-        f"<span style='display:inline-block; background:{BACKGROUND}; border:1px solid {CARD_BORDER}; "
-        f"border-radius:12px; padding:0.15rem 0.7rem; margin:0.2rem; font-size:0.78rem; color:{TEXT_MUTED};'>{s}</span>"
+        f"<span class='arch-chip' style='background-color:white; border:1px solid {border}66; color:{border};'>{s}</span>"
         for s in subitems
     )
     st.markdown(f"<div style='text-align:center; margin-top:0.3rem;'>{chips}</div>", unsafe_allow_html=True)
 
 
 def arrow() -> None:
-    st.markdown("<div class='flow-arrow'>&#8595;</div>", unsafe_allow_html=True)
+    st.markdown("<div class='arch-arrow'>&#8595;</div>", unsafe_allow_html=True)
 
 
 # ============================================================
 # 1. System Overview
 # ============================================================
 st.subheader("System Overview")
-render_flow(["User", "Passenger Information", "Input Validation"])
+idx = render_steps(["User", "Passenger Information", "Input Validation"], 0)
 arrow()
 render_step_with_subitems(
     "Production Preprocessing Pipeline",
     ["Missing Value Handling", "Feature Engineering", "Feature Validation"],
+    color_index=idx,
 )
+idx += 1
 arrow()
-render_flow(["Machine Learning Model"])
+idx = render_steps(["Machine Learning Model"], idx)
 arrow()
 render_step_with_subitems(
     "Prediction Engine",
     ["Probability", "Confidence", "Feature Contributions"],
+    color_index=idx,
 )
+idx += 1
 arrow()
-render_flow(["Decision Intelligence Panel", "Interactive Dashboard"])
+render_steps(["Decision Intelligence Panel", "Interactive Dashboard"], idx)
 
 # ============================================================
 # 2. Pipeline Components
@@ -65,7 +132,7 @@ c_row2 = st.columns(3)
 for i, (icon, title, text) in enumerate(COMPONENTS):
     col = c_row1[i] if i < 3 else c_row2[i - 3]
     with col:
-        highlight_card(icon, title, text)
+        highlight_card(icon, title, text, show_icon=False)
 
 # ============================================================
 # 3. Data Flow
@@ -73,4 +140,4 @@ for i, (icon, title, text) in enumerate(COMPONENTS):
 st.write("")
 st.divider()
 st.subheader("Data Flow")
-render_flow(["Raw Input", "Validation", "Transformation", "Prediction", "Interpretation", "Visualization"])
+render_steps(["Raw Input", "Validation", "Transformation", "Prediction", "Interpretation", "Visualization"], 0)

@@ -12,7 +12,23 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from data_utils import load_transformed
-from theme import CARD_BORDER, ERROR, PRIMARY, TEXT_MUTED, page_header, render_flow, style_fig, takeaway
+from theme import (
+    CARD_BORDER,
+    ERROR,
+    PRIMARY,
+    QUATERNARY,
+    SUCCESS,
+    TERTIARY,
+    TEXT_MUTED,
+    TEXT_PRIMARY,
+    WARNING,
+    highlight_card,
+    page_header,
+    style_fig,
+    takeaway,
+)
+
+BAR_PALETTE = [PRIMARY, SUCCESS, WARNING, QUATERNARY, TERTIARY, ERROR]
 
 df = load_transformed()
 
@@ -27,11 +43,12 @@ with tab1:
     metric = st.radio("Distribution:", ["Age", "Fare"], horizontal=True)
     fig = px.histogram(
         df, x=metric, color="Survived", barmode="overlay", opacity=0.65,
-        color_discrete_map={0: "#C62828", 1: PRIMARY},
+        color_discrete_map={0: ERROR, 1: PRIMARY},
         labels={"Survived": "Outcome"},
     )
     fig.for_each_trace(lambda t: t.update(name="Survived" if t.name == "1" else "Did Not Survive"))
-    st.plotly_chart(style_fig(fig), use_container_width=True)
+    with st.container(border=True, key="card-feature-dist-chart"):
+        st.plotly_chart(style_fig(fig), use_container_width=True)
     if metric == "Fare":
         takeaway("Fare separates outcomes more cleanly than Age, and is heavily right-skewed — log-transformed inside the model pipeline.")
     else:
@@ -44,15 +61,16 @@ with tab2:
     rate = df.groupby(factor, observed=True)["Survived"].mean().sort_values(ascending=False).mul(100)
     overall_rate = df["Survived"].mean() * 100
 
-    with st.container(border=True):
+    with st.container(border=True, key="card-survival-chart"):
         _, chart_col, _ = st.columns([1, 10, 1])
         with chart_col:
             fig = go.Figure()
+            bar_colors = [BAR_PALETTE[i % len(BAR_PALETTE)] for i in range(len(rate))]
             fig.add_trace(go.Bar(
                 x=rate.index.astype(str), y=rate.values,
-                marker_color=PRIMARY, marker_cornerradius=8,
+                marker_color=bar_colors, marker_cornerradius=8,
                 text=[f"{v:.0f}%" for v in rate.values],
-                textposition="outside", textfont=dict(size=14, color="#14213D"),
+                textposition="outside", textfont=dict(size=14, color=TEXT_PRIMARY),
                 hovertemplate="<b>%{x}</b><br>Survival rate: %{y:.1f}%<extra></extra>",
             ))
             fig.add_hline(
@@ -68,7 +86,7 @@ with tab2:
             fig.update_xaxes(title=factor, showline=True, linecolor=CARD_BORDER, ticks="", tickfont=dict(size=13))
             fig.update_yaxes(
                 showticklabels=False, title="Survival Rate (%)", showline=True, linecolor=CARD_BORDER,
-                showgrid=True, gridcolor="#F0F0F0", zeroline=False,
+                showgrid=True, gridcolor="#F1F5F9", zeroline=False,
                 range=[0, max(rate.values.max(), overall_rate) * 1.25],
             )
             st.plotly_chart(fig, use_container_width=True)
@@ -79,19 +97,21 @@ with tab3:
     corr_cols = ["Survived", "Pclass", "Age", "SibSp", "Parch", "Fare", "FamilySize", "FarePerPerson", "HasCabin", "IsAlone"]
     corr = df[corr_cols].corr()
     fig = px.imshow(
-        corr.round(2), text_auto=True, color_continuous_scale=["#C62828", "#F0EFEC", PRIMARY],
+        corr.round(2), text_auto=True, color_continuous_scale=[ERROR, "#F3F4F6", PRIMARY],
         zmin=-1, zmax=1, labels={"color": "Pearson r"},
     )
-    st.plotly_chart(style_fig(fig, height=480), use_container_width=True)
+    with st.container(border=True, key="card-correlation-chart"):
+        st.plotly_chart(style_fig(fig, height=480), use_container_width=True)
     takeaway("FamilySize correlates strongly with both SibSp and Parch, and FarePerPerson tracks Fare almost 1:1 — exactly the redundancy VIF quantifies next.")
 
 with tab4:
     heatmap_data = df.groupby(["Pclass", "Sex"], observed=True)["Survived"].mean().unstack().mul(100).round(1)
     fig = px.imshow(
-        heatmap_data, text_auto=True, color_continuous_scale=["#F0EFEC", PRIMARY],
+        heatmap_data, text_auto=True, color_continuous_scale=["#F3F4F6", PRIMARY],
         labels={"color": "Survival rate (%)"},
     )
-    st.plotly_chart(style_fig(fig, height=350), use_container_width=True)
+    with st.container(border=True, key="card-class-sex-chart"):
+        st.plotly_chart(style_fig(fig, height=350), use_container_width=True)
     takeaway("Sex sets the baseline; class reshapes it unevenly — 1st-class women survive at 97%, even 1st-class men only reach 37%.")
 
 with tab5:
@@ -110,24 +130,82 @@ with tab5:
         text=["∞" if np.isinf(v) else f"{v:.1f}" for v in vif],
     )
     fig.update_traces(marker_color=colors, textposition="outside")
-    fig.add_vline(x=5, line_dash="dash", line_color="#5B6572")
-    st.plotly_chart(style_fig(fig, height=380), use_container_width=True)
+    fig.add_vline(x=5, line_dash="dash", line_color=TEXT_MUTED)
+    with st.container(border=True, key="card-vif-chart"):
+        st.plotly_chart(style_fig(fig, height=380), use_container_width=True)
     takeaway("SibSp, Parch, and FamilySize are perfectly collinear (VIF = infinite) — never train a model with all three together.")
 
 with tab6:
-    render_flow([
-        "Original Candidate Features (11)",
-        "Statistical Significance Testing",
-        "Mutual Information Ranking",
-        "Multicollinearity Check (VIF)",
-        "Engineering Trade-off Review",
-        "Final Production Features (8)",
-    ])
-    st.markdown(
-        "- Three features — sibling/spouse count, parent/child count, and family size — were perfectly "
-        "collinear; VIF flagged them as infinite\n"
-        "- Two more features offered only marginal information gain relative to their engineering cost, "
-        "and were cut\n"
-        "- The resulting 8-feature schema let a simpler linear model outperform the original ensemble"
+    FSJ_STAGES = [
+        ("Candidate Features", "11 Initial Features", "blue"),
+        ("Statistical Testing", "Validated predictive significance", "blue"),
+        ("Mutual Information", "Measured feature relevance", "purple"),
+        ("Multicollinearity Analysis", "Removed redundant features", "purple"),
+        ("Engineering Review", "Balanced simplicity and performance", "green"),
+        ("Final Feature Set", "8 Selected Features", "green"),
+    ]
+    FSJ_COLORS = {"blue": PRIMARY, "purple": QUATERNARY, "green": SUCCESS}
+
+    header_col, badge_col = st.columns([3, 1])
+    with header_col:
+        st.caption("How the final feature set was selected.")
+    with badge_col:
+        st.markdown(
+            f"<div style='text-align:right;'><span style='display:inline-block; background:#EFF6FF; "
+            f"border:1px solid {PRIMARY}; border-radius:999px; padding:0.25rem 0.85rem; "
+            f"font-weight:700; color:{PRIMARY}; font-size:0.8rem;'>Feature Reduction&nbsp;&nbsp;11 &rarr; 8</span></div>",
+            unsafe_allow_html=True,
+        )
+
+    st.write("")
+    step_weights = []
+    for i in range(len(FSJ_STAGES)):
+        step_weights.append(6)
+        if i < len(FSJ_STAGES) - 1:
+            step_weights.append(1)
+    step_cols = st.columns(step_weights)
+    for i, (title, subtitle, color_key) in enumerate(FSJ_STAGES):
+        accent = FSJ_COLORS[color_key]
+        with step_cols[i * 2]:
+            st.markdown(
+                "<div style='text-align:center;'>"
+                f"<div style='width:36px; height:36px; border-radius:50%; background:{accent}1A; "
+                f"border:2px solid {accent}; color:{accent}; font-weight:700; font-size:0.95rem; "
+                "display:flex; align-items:center; justify-content:center; margin:0 auto 0.5rem auto;'>"
+                f"{i + 1}</div>"
+                f"<div style='font-weight:700; color:{TEXT_PRIMARY}; font-size:0.85rem;'>{title}</div>"
+                f"<div style='color:{TEXT_MUTED}; font-size:0.74rem; margin-top:0.15rem;'>{subtitle}</div>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
+        if i < len(FSJ_STAGES) - 1:
+            with step_cols[i * 2 + 1]:
+                st.markdown(
+                    "<div style='text-align:center; padding-top:10px; color:#CBD5E1; font-size:1.1rem;'>&rarr;</div>",
+                    unsafe_allow_html=True,
+                )
+
+    st.write("")
+    ins_cols = st.columns(3)
+    with ins_cols[0]:
+        highlight_card(
+            "", "Redundancy Removed",
+            "Three highly correlated features were removed after multicollinearity analysis.",
+            show_icon=False,
+        )
+    with ins_cols[1]:
+        highlight_card(
+            "", "Evidence-Based Selection",
+            "Every feature was evaluated using statistical testing, information gain, and engineering review.",
+            show_icon=False,
+        )
+    with ins_cols[2]:
+        highlight_card(
+            "", "Final Outcome",
+            "A simpler feature set improved generalization while reducing unnecessary complexity.",
+            show_icon=False,
+        )
+    takeaway(
+        "Every feature was retained or removed based on statistical evidence and engineering judgment "
+        "rather than intuition."
     )
-    takeaway("Every removed feature was cut on evidence — redundancy or marginal value — not convenience.")

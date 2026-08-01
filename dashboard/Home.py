@@ -10,6 +10,13 @@ st.set_page_config(
 )
 apply_theme()
 
+LOGO_SVG = """
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="55">
+  <text x="0" y="38" font-family="sans-serif" font-size="30" font-weight="700" fill="#111827">Titanic Insights</text>
+</svg>
+"""
+st.logo(LOGO_SVG, size="large")
+
 pages = [
     st.Page("views/home.py", title="Home", default=True),
     st.Page("views/dataset_overview.py", title="Data Overview"),

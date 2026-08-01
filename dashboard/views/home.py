@@ -7,12 +7,39 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from data_utils import evaluate_v2_on_test, load_feature_schema, load_raw, load_stage4_results
-from theme import highlight_card, metric_card, render_flow
+from theme import (
+    ERROR,
+    PRIMARY,
+    QUATERNARY,
+    SUCCESS,
+    TERTIARY,
+    WARNING,
+    highlight_card,
+    metric_card,
+    render_flow,
+)
 
 raw = load_raw()
 schema = load_feature_schema()
 results = load_stage4_results()
 _, _, _, _, metrics = evaluate_v2_on_test()
+
+BOLD_PALETTE = [PRIMARY, SUCCESS, WARNING, QUATERNARY, TERTIARY, ERROR]
+
+
+def _slug(text: str) -> str:
+    return "".join(c.lower() if c.isalnum() else "-" for c in text).strip("-")
+
+
+def bold_card_css(labels: list[str], key_prefix: str) -> str:
+    rules = []
+    for i, label in enumerate(labels):
+        color = BOLD_PALETTE[i % len(BOLD_PALETTE)]
+        rules.append(
+            f'div[class*="st-key-card-{key_prefix}-{_slug(label)}"] {{ background-color: {color} !important; }}'
+            f'div[class*="st-key-card-{key_prefix}-{_slug(label)}"] * {{ color: white !important; }}'
+        )
+    return "<style>" + "".join(rules) + "</style>"
 
 # --- Title, one-liner, call to action -----------------------------------
 st.title("Titanic Survival Prediction")
@@ -26,6 +53,14 @@ st.divider()
 
 # --- Project Snapshot -----------------------------------------------------
 st.subheader("Project Snapshot")
+st.markdown(
+    bold_card_css(
+        ["Dataset", "Models Compared", "Production Algorithm", "Accuracy",
+         "ROC-AUC", "Features Used", "API", "Deployment"],
+        "metric",
+    ),
+    unsafe_allow_html=True,
+)
 row1 = st.columns(4)
 row2 = st.columns(4)
 with row1[0]:
@@ -63,12 +98,13 @@ HIGHLIGHTS = [
     ("dashboard", "Interactive Analytics Dashboard", "An interactive dashboard for exploring the dataset, model, and live predictions."),
     ("cloud_done", "Cloud Deployment", "Containerized with Docker and deployed on AWS EC2 for real-time inference."),
 ]
+st.markdown(bold_card_css([title for _, title, _ in HIGHLIGHTS], "highlight"), unsafe_allow_html=True)
 h_row1 = st.columns(3)
 h_row2 = st.columns(3)
 for i, (icon, title, text) in enumerate(HIGHLIGHTS):
     col = h_row1[i] if i < 3 else h_row2[i - 3]
     with col:
-        highlight_card(icon, title, text)
+        highlight_card(icon, title, text, show_icon=False)
 
 st.divider()
 
@@ -86,5 +122,5 @@ n_row2 = st.columns(2)
 for i, (path, label, icon) in enumerate(NAV_ITEMS):
     col = n_row1[i] if i < 3 else n_row2[i - 3]
     with col:
-        with st.container(border=True):
-            st.page_link(path, label=label, icon=f":material/{icon}:", use_container_width=True)
+        with st.container(border=True, key=f"card-nav-{icon}"):
+            st.page_link(path, label=label, use_container_width=True)
