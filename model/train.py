@@ -27,7 +27,7 @@ MODEL_PATH = BASE_DIR / "model" / "model.pkl"
 
 
 def load_and_prepare_data() -> tuple[pd.DataFrame, pd.Series]:
-    """Load raw data and engineer features (matches notebooks/Udbhav_Statistical_Analysis.ipynb)."""
+    """Load raw data and engineer features (matches notebooks/Week1_Statistical_Analysis.ipynb)."""
     data = pd.read_csv(DATA_PATH)
 
     data["HasCabin"] = data["Cabin"].notna().astype(int)
