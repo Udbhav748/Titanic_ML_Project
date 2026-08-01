@@ -28,7 +28,7 @@ lifecycle: a leakage-safe preprocessing pipeline, a production feature
 schema chosen by VIF and mutual-information evidence rather than
 intuition, a controlled comparison across four models, and a deployment
 plan that upgrades the model without breaking the live API. The system
-ships as a versioned FastAPI service, an 8-page Streamlit dashboard, and
+ships as a versioned FastAPI service, a 6-page Streamlit dashboard, and
 a Docker/EC2 deployment path, backed by 76 automated tests and a CI
 pipeline that rebuilds and validates every artifact on every push.
 
@@ -42,7 +42,7 @@ pipeline that rebuilds and validates every artifact on every push.
 - [x] FastAPI service — validated request/response contracts
 - [x] Dockerized deployment — versioned images, no assumed downtime
 - [x] AWS EC2 hosting — documented rollback runbook
-- [x] 8-page Streamlit dashboard — architecture, model card, live prediction
+- [x] 6-page Streamlit dashboard — architecture, live prediction, decision support
 - [x] Versioned artifacts — model, preprocessing, and schema paired and checked
 - [x] CI/CD — lint, rebuild artifacts, verify versions, test, on every push
 
@@ -126,7 +126,7 @@ Titanic-End-to-End/
 ├── analysis/          Reproducible stage scripts (data audit, model comparison)
 ├── api/               FastAPI service — schemas.py, main.py
 ├── artifacts/         Versioned preprocessing + feature schema
-├── dashboard/         8-page Streamlit application
+├── dashboard/         6-page Streamlit application
 ├── docs/              Diagrams and dashboard screenshots (this README's assets)
 ├── data/              Raw Titanic dataset
 ├── model/             model_v1.pkl, model_v2.pkl, train.py, train_v2.py
@@ -187,6 +187,12 @@ Interactive docs at `/docs` once the API is running.
 6 pages: Home, Data Overview, Data Analysis, Model Performance, Live
 Prediction, Project Architecture. Every chart and metric is computed
 live from the versioned artifacts — nothing is hardcoded.
+
+Every major chart carries a collapsed "What This Means" panel: what the
+chart shows, why it matters, and what engineering decision it drove.
+Live Prediction goes further, decomposing a single passenger's prediction
+into signed feature contributions, counterfactuals, and similar historical
+cases, all computed from the model's own coefficients — no SHAP dependency.
 
 ## Testing & CI
 
