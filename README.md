@@ -2,7 +2,9 @@
 
 # Titanic Survival Prediction
 
+**A production-grade machine learning system — not a Kaggle notebook.**
 
+Leakage-safe preprocessing, a statistically-validated feature schema, a controlled four-model comparison, an explainable production model, a versioned deployment pipeline, and a tested, CI-gated codebase.
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-1.5-F7931E?logo=scikitlearn&logoColor=white)
@@ -14,14 +16,16 @@
 ![Coverage](https://img.shields.io/badge/Core%20Module%20Coverage-100%25-2E7D32)
 ![License](https://img.shields.io/badge/License-MIT-1F4E79)
 
-[![Live Dashboard](https://img.shields.io/badge/Live-Dashboard-FF4B4B?logo=streamlit&logoColor=white)](http://13.51.85.67:8501)
-[![Live API Docs](https://img.shields.io/badge/Live-API%20Docs-009688?logo=fastapi&logoColor=white)](http://13.51.85.67:8000/docs)
-
 </div>
 
 ---
 
-## Project Overview
+> [!NOTE]
+> **🌐 Live on AWS EC2:**
+> - Interactive Streamlit Dashboard: **http://13.51.85.67:8501**
+> - FastAPI Production Web Service: **http://13.51.85.67:8000/docs**
+
+## 🚢 Project Overview
 
 This project predicts Titanic passenger survival — but the dataset is the
 vehicle, not the point. It exists to demonstrate a full ML engineering
@@ -33,100 +37,17 @@ ships as a versioned FastAPI service, a 6-page Streamlit dashboard, and
 a Docker/EC2 deployment path, backed by 76 automated tests and a CI
 pipeline that rebuilds and validates every artifact on every push.
 
-## Key Highlights
+## ✨ Features
 
-- [x] End-to-end ML pipeline — raw data to deployed API
-- [x] Production feature engineering — leakage-safe, fitted once, versioned
-- [x] Statistical feature validation — VIF, mutual information, chi-square
-- [x] Controlled model comparison — 4 models, one identical protocol
-- [x] Explainable predictions — coefficient decomposition, no black box
-- [x] FastAPI service — validated request/response contracts
-- [x] Dockerized deployment — versioned images, no assumed downtime
-- [x] AWS EC2 hosting — documented rollback runbook
-- [x] 6-page Streamlit dashboard — architecture, live prediction, decision support
-- [x] Versioned artifacts — model, preprocessing, and schema paired and checked
-- [x] CI/CD — lint, rebuild artifacts, verify versions, test, on every push
+- **Data-leakage protection** — `TitanicPreprocessor` fits imputation and encoding on the training split only; a regression test proves the original full-dataset-fit bug can't recur.
+- **Stratified 5-fold cross-validation** — every one of the four candidate models is trained and scored under one identical split and CV protocol, not tuned unevenly and cherry-picked.
+- **Statistical feature selection** — VIF and mutual information cut the schema from 11 features to 8, evidence-based rather than intuition-based.
+- **Model explainability, no SHAP dependency** — Logistic Regression's own coefficients decompose into signed, per-feature contributions for any single passenger.
+- **Interactive Streamlit dashboard** — 6 pages covering data exploration, statistical analysis, model comparison, and a live decision-support prediction tool, with collapsible "What This Means" explanations on every major chart.
+- **FastAPI endpoint service** — Pydantic-validated `/predict`, `/v2/predict`, and `/health` endpoints, with a request/response contract that stayed backward-compatible through a full model and schema swap.
+- **Dockerized deployment** — a single versioned image, deployed to AWS EC2, with a documented rollback runbook.
 
-## System Architecture
-
-<div align="center">
-<img src="docs/architecture-diagram.png" width="640" alt="System architecture — prediction request flow">
-</div>
-
-Both the preprocessing artifact and the model load once at process
-startup — never refit, never reloaded per request. Full request-to-response
-trace: [`reports/stage6_deployment_plan.md`](reports/stage6_deployment_plan.md).
-
-## Dashboard Preview
-
-<table>
-<tr>
-<td width="50%"><img src="docs/screenshots/home.png" alt="Home"><br><sub align="center">Home</sub></td>
-<td width="50%"><img src="docs/screenshots/live-prediction.png" alt="Live Prediction"><br><sub>Live Prediction</sub></td>
-</tr>
-<tr>
-<td width="50%"><img src="docs/screenshots/model-performance.png" alt="Model Performance"><br><sub>Model Performance</sub></td>
-<td width="50%"><img src="docs/screenshots/architecture-page.png" alt="Project Architecture"><br><sub>Project Architecture</sub></td>
-</tr>
-</table>
-
-**The core evidence behind the model choice** — all four candidates under one identical evaluation protocol:
-
-<div align="center">
-<img src="docs/screenshots/model-comparison-chart.png" width="720" alt="Model comparison across Accuracy, Precision, Recall, F1, and ROC-AUC">
-</div>
-
-Full 6-page tour (Data Overview, Data Analysis, Project Architecture) at
-the [live dashboard](http://13.51.85.67:8501), or run it locally — see
-[Running the Project](#running-the-project).
-
-## Machine Learning Pipeline
-
-<div align="center">
-<img src="docs/pipeline-diagram.png" width="560" alt="ML pipeline — dataset to deployment">
-</div>
-
-Each stage is a standalone, reproducible artifact — not just a notebook cell:
-
-| Stage | Output |
-|---|---|
-| Cleaning | `src/preprocessing.py` — leakage-safe imputation, fit on train split only |
-| Feature Engineering | `artifacts/preprocessing.pkl` — versioned, fitted-once transformer |
-| Feature Selection | [`reports/stage3_feature_selection.md`](reports/stage3_feature_selection.md) — 11 features cut to 8, evidence-based |
-| Training | `analysis/stage4_model_comparison.py` — 4 models, identical split/CV — visualized in [`notebooks/Stage4_Model_Comparison.ipynb`](notebooks/Stage4_Model_Comparison.ipynb) |
-| Evaluation | [`notebooks/Stage5_Model_Evaluation.ipynb`](notebooks/Stage5_Model_Evaluation.ipynb) — calibration, errors, explainability |
-| Deployment | [`reports/stage6_deployment_plan.md`](reports/stage6_deployment_plan.md) — versioning, rollback, zero-downtime plan |
-
-**Feature Selection, in detail** — how Stages 1-3 connect:
-
-<div align="center">
-<img src="docs/feature-selection-journey.png" width="560" alt="Feature selection journey — 11 features to 8, Stages 1-3">
-</div>
-
-## Model Performance
-
-| Model | Accuracy | F1 | ROC-AUC | Features |
-|---|---|---|---|---|
-| **Logistic Regression (production)** | **0.832** | **0.792** | **0.865** | **8** |
-| Random Forest (previous production) | 0.804 | 0.759 | 0.853 | 11 |
-| Gradient Boosting | 0.804 | 0.729 | 0.841 | 8 |
-| Random Forest (untuned, new schema) | 0.788 | 0.729 | 0.839 | 8 |
-
-Logistic Regression beat the previously-deployed, tuned Random Forest —
-**without any hyperparameter search of its own** — while training 17x
-faster and showing no overfitting. Full controlled-comparison methodology:
-[`reports/stage4_model_comparison.md`](reports/stage4_model_comparison.md).
-
-## Engineering Highlights
-
-- Preprocessing is fit once on the training split and persisted as a versioned artifact — never refit at inference.
-- The production feature schema removed three perfectly-collinear features (VIF = infinite), found by direct measurement, not guesswork.
-- Four models were compared under one identical split, cross-validation strategy, and evaluation protocol — not tuned unevenly and cherry-picked.
-- A real cross-artifact version-drift bug was found, fixed, and turned into a permanent regression test enforced in CI.
-- The API's client contract (`/predict`) stayed backward-compatible through a full model and schema change — `/v2/predict` is additive, not breaking.
-- 76 automated tests cover preprocessing, validation, model integration, the API, and the dashboard's data layer, with 100% coverage on the core preprocessing module.
-
-## Project Structure
+## 📦 Project Structure
 
 ```
 Titanic-End-to-End/
@@ -145,33 +66,76 @@ Titanic-End-to-End/
 └── Dockerfile
 ```
 
-## Installation
+## ⚙️ Data Preprocessing & Pipeline
+
+- **Train/test split** — an 80/20 stratified split, identical across all four compared models.
+- **Imputation** — `Age` is filled from the training fold's own statistics, never the full dataset; `Embarked` is filled from the training fold's mode.
+- **Cabin** — 77% missing, too sparse to impute reliably, so it's converted to a binary `HasCabin` flag instead of being dropped outright.
+- **Feature engineering** — `FamilySize` is derived from `SibSp + Parch`; `Title` is extracted from `Name` (Mr / Mrs / Miss / Master / Rare).
+- **Skew correction** — `Fare` is heavily right-skewed, so it's log-transformed before reaching the model.
+- **Multicollinearity** — VIF flagged `SibSp`, `Parch`, and `FamilySize` as perfectly collinear (VIF = infinite); only `FamilySize` was kept in the production schema.
+- **Encoding & scaling** — categorical features go through a `ColumnTransformer` inside the same pipeline object that's persisted and versioned — nothing is transformed by hand outside the pipeline.
+
+Full write-up: [`reports/stage3_feature_selection.md`](reports/stage3_feature_selection.md).
+
+<div align="center">
+<img src="docs/feature-selection-journey.png" width="560" alt="Feature selection journey — 11 features to 8, Stages 1-3">
+</div>
+
+## 🔬 Model Experimentation & Metrics
+
+Four models, one identical split, cross-validation strategy, and evaluation protocol:
+
+| Model | Accuracy | Precision | Recall | F1 | ROC-AUC | CV Mean (F1) | Features |
+|---|---|---|---|---|---|---|---|
+| **Logistic Regression (production)** | **0.832** | **0.760** | **0.826** | **0.792** | **0.865** | 0.769 | **8** |
+| Baseline Random Forest (previous production, tuned) | 0.804 | 0.724 | 0.797 | 0.759 | 0.853 | **0.795** | 11 |
+| Gradient Boosting | 0.804 | 0.783 | 0.681 | 0.729 | 0.841 | 0.763 | 8 |
+| Random Forest (untuned, new schema) | 0.788 | 0.718 | 0.739 | 0.729 | 0.839 | 0.751 | 8 |
+
+<div align="center">
+<img src="docs/screenshots/model-comparison-chart.png" width="720" alt="Model comparison across Accuracy, Precision, Recall, F1, and ROC-AUC">
+</div>
+
+**Rationale for Logistic Regression selection:**
+
+- **Best on 4 of 5 test metrics** — accuracy, recall, F1, and ROC-AUC — against a tuned baseline, without any hyperparameter search of its own.
+- **No overfitting signature** — the only model whose test F1 doesn't drop below its train F1; Random Forest's train/test F1 gap is +0.255.
+- **Faster** — trains in a fraction of a second versus the baseline's tuned RandomizedSearchCV, and predicts faster too.
+- **Fully interpretable** — every prediction decomposes into signed, per-feature coefficient contributions, no black box.
+
+Full controlled-comparison methodology: [`reports/stage4_model_comparison.md`](reports/stage4_model_comparison.md).
+
+## 🚀 Installation & Local Run
 
 ```bash
-git clone <repository-url>
+# Clone the repository
+git clone https://github.com/Udbhav748/Titanic_ML_Project.git
 cd Titanic-End-to-End
+
+# Install dependencies
 pip install -r requirements-dev.txt
 ```
 
-## Running the Project
-
 ```bash
-# API
-uvicorn api.main:app --reload
-
-# Dashboard
+# Run the Streamlit dashboard
 streamlit run dashboard/Home.py
-
-# Docker
-docker build -t titanic-api .
-docker run -d -p 8000:8000 --name titanic-api-container titanic-api
 ```
 
-<div align="center">
-<img src="docs/deployment-diagram.png" width="480" alt="Deployment pipeline — Docker and AWS EC2">
-</div>
+Open http://localhost:8501 in your browser, or try the
+[live dashboard](http://13.51.85.67:8501) directly.
 
-## API Usage
+## ⚡ FastAPI Production Web Service
+
+```bash
+# Run the API locally
+uvicorn api.main:app --reload
+```
+
+Interactive docs are served at `/docs`, or try the
+[live instance](http://13.51.85.67:8000/docs) directly.
+
+**Request** — `POST /predict`
 
 ```bash
 curl -X POST http://localhost:8000/predict \
@@ -183,24 +147,85 @@ curl -X POST http://localhost:8000/predict \
       }'
 ```
 
+**Response:**
+
 ```json
 {"survived": true, "survival_probability": 0.9867}
 ```
 
-Interactive docs at `/docs` once the API is running, or try the
-[live instance](http://13.51.85.67:8000/docs) directly.
+## 🐳 Docker Deployment
 
-## Dashboard
+```bash
+# Build the image
+docker build -t titanic-api .
+
+# Run the container
+docker run -d -p 8000:8000 --name titanic-api-container titanic-api
+```
+
+<div align="center">
+<img src="docs/deployment-diagram.png" width="480" alt="Deployment pipeline — Docker and AWS EC2">
+</div>
+
+Full request-to-response trace and EC2 rollback runbook:
+[`reports/stage6_deployment_plan.md`](reports/stage6_deployment_plan.md).
+
+## Dashboard Preview
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/home.png" alt="Home"><br><sub align="center">Home</sub></td>
+<td width="50%"><img src="docs/screenshots/live-prediction.png" alt="Live Prediction"><br><sub>Live Prediction</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/screenshots/model-performance.png" alt="Model Performance"><br><sub>Model Performance</sub></td>
+<td width="50%"><img src="docs/screenshots/architecture-page.png" alt="Project Architecture"><br><sub>Project Architecture</sub></td>
+</tr>
+</table>
 
 6 pages: Home, Data Overview, Data Analysis, Model Performance, Live
 Prediction, Project Architecture. Every chart and metric is computed
-live from the versioned artifacts — nothing is hardcoded.
+live from the versioned artifacts — nothing is hardcoded. Every major
+chart carries a collapsed "What This Means" panel: what the chart shows,
+why it matters, and what engineering decision it drove. Live Prediction
+decomposes a single passenger's prediction into signed feature
+contributions, counterfactuals, and similar historical cases, all
+computed from the model's own coefficients.
 
-Every major chart carries a collapsed "What This Means" panel: what the
-chart shows, why it matters, and what engineering decision it drove.
-Live Prediction goes further, decomposing a single passenger's prediction
-into signed feature contributions, counterfactuals, and similar historical
-cases, all computed from the model's own coefficients — no SHAP dependency.
+## System Architecture
+
+<div align="center">
+<img src="docs/architecture-diagram.png" width="640" alt="System architecture — prediction request flow">
+</div>
+
+Both the preprocessing artifact and the model load once at process
+startup — never refit, never reloaded per request.
+
+## Machine Learning Pipeline
+
+<div align="center">
+<img src="docs/pipeline-diagram.png" width="560" alt="ML pipeline — dataset to deployment">
+</div>
+
+Each stage is a standalone, reproducible artifact — not just a notebook cell:
+
+| Stage | Output |
+|---|---|
+| Cleaning | `src/preprocessing.py` — leakage-safe imputation, fit on train split only |
+| Feature Engineering | `artifacts/preprocessing.pkl` — versioned, fitted-once transformer |
+| Feature Selection | [`reports/stage3_feature_selection.md`](reports/stage3_feature_selection.md) — 11 features cut to 8, evidence-based |
+| Training | `analysis/stage4_model_comparison.py` — 4 models, identical split/CV — visualized in [`notebooks/Stage4_Model_Comparison.ipynb`](notebooks/Stage4_Model_Comparison.ipynb) |
+| Evaluation | [`notebooks/Stage5_Model_Evaluation.ipynb`](notebooks/Stage5_Model_Evaluation.ipynb) — calibration, errors, explainability |
+| Deployment | [`reports/stage6_deployment_plan.md`](reports/stage6_deployment_plan.md) — versioning, rollback, zero-downtime plan |
+
+## Engineering Highlights
+
+- Preprocessing is fit once on the training split and persisted as a versioned artifact — never refit at inference.
+- The production feature schema removed three perfectly-collinear features (VIF = infinite), found by direct measurement, not guesswork.
+- Four models were compared under one identical split, cross-validation strategy, and evaluation protocol — not tuned unevenly and cherry-picked.
+- A real cross-artifact version-drift bug was found, fixed, and turned into a permanent regression test enforced in CI.
+- The API's client contract (`/predict`) stayed backward-compatible through a full model and schema change — `/v2/predict` is additive, not breaking.
+- 76 automated tests cover preprocessing, validation, model integration, the API, and the dashboard's data layer, with 100% coverage on the core preprocessing module.
 
 ## Testing & CI
 
