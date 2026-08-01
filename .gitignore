@@ -9,3 +9,9 @@ venv/
 .ruff_cache/
 .claude/
 CLAUDE.md
+
+# Orphaned / regenerable assets, kept locally but not tracked
+images/
+docs/screenshots/model-card.png
+docs/screenshots/project-evolution.png
+data/train_transformed.csv
