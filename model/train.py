@@ -101,7 +101,7 @@ def tune_random_forest(X_train: pd.DataFrame, y_train: pd.Series,
 
     search = RandomizedSearchCV(
         pipeline, RF_PARAM_DISTRIBUTIONS, n_iter=20, scoring="f1",
-        cv=5, random_state=RANDOM_STATE, n_jobs=-1,
+        cv=5, random_state=RANDOM_STATE, n_jobs=1,
     )
     search.fit(X_train, y_train)
 
@@ -129,7 +129,7 @@ def tune_logistic_regression(X_train: pd.DataFrame, y_train: pd.Series,
 
     search = RandomizedSearchCV(
         pipeline, LR_PARAM_DISTRIBUTIONS, n_iter=12, scoring="f1",
-        cv=5, random_state=RANDOM_STATE, n_jobs=-1,
+        cv=5, random_state=RANDOM_STATE, n_jobs=1,
     )
     search.fit(X_train, y_train)
 
