@@ -226,7 +226,7 @@ Titanic-End-to-End/
 
 ```bash
 # Clone the repository
-git clone https://github.com/Udbhav748/Titanic_ML_Project.git
+git clone https://github.com/Udbhav748/Titanic-survival-analytics.git
 cd Titanic-End-to-End
 
 # Create and activate a virtual environment
