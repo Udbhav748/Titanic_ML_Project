@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -13,11 +14,13 @@ from data_utils import (
     get_coefficients,
     get_logit_strength_cutoffs,
     get_population_reference,
+    get_shap_explainer,
     get_transformed_train_matrix,
     load_model_v2,
     load_train_reference,
 )
 from theme import (
+    CARD_BORDER,
     ERROR,
     PRIMARY,
     QUATERNARY,
@@ -161,6 +164,21 @@ if submitted:
     positive = active[active["contribution"] > 0].sort_values("abs_contrib", ascending=False)
     negative = active[active["contribution"] < 0].sort_values("abs_contrib", ascending=False)
 
+    # --- SHAP attribution — same underlying linear model, computed via
+    # shap.LinearExplainer instead of a raw coefficient x value product.
+    # For a linear model these are exact (they sum precisely to
+    # decision_function), so this is a cross-check on `active` above as
+    # much as it is a second visualization. ---
+    explainer = get_shap_explainer()
+    shap_values = explainer.shap_values(transformed.reshape(1, -1))[0]
+    shap_base = float(explainer.expected_value)
+    shap_df = pd.DataFrame({"feature": coef_df["feature"], "shap_value": shap_values})
+    shap_active = shap_df[shap_df["feature"].isin(active["feature"])].copy()
+    shap_active["label"] = [describe_feature(f) for f in shap_active["feature"]]
+    shap_active = shap_active.reindex(
+        shap_active["shap_value"].abs().sort_values(ascending=False).index
+    )
+
     # --- Counterfactual candidates — realistic values only, grounded in the real dataset ---
     candidates = []
     for pc in (1, 2, 3):
@@ -257,7 +275,45 @@ if submitted:
                 st.markdown(f"- {r['label']} — {r['relative_pct']:.0f}% ({r['strength']})")
 
     # ============================================================
-    # 4. Counterfactual Decision Explorer
+    # 4. SHAP Feature Attribution
+    # ============================================================
+    st.write("")
+    st.subheader("SHAP Feature Attribution")
+    st.caption("This prediction decomposed with SHAP, the industry-standard method for explaining individual predictions.")
+    # Track the running cumulative total at every step (not just each bar's
+    # own delta) so the y-axis range can be padded around the waterfall's
+    # actual highs and lows — outside text labels get clipped otherwise.
+    running = shap_base
+    running_values = [running]
+    for v in shap_active["shap_value"]:
+        running += v
+        running_values.append(running)
+    running_values.append(logit)
+    y_max, y_min = max(running_values), min(running_values)
+    pad = (y_max - y_min) * 0.15 or 0.1
+
+    waterfall = go.Figure(go.Waterfall(
+        orientation="v",
+        measure=["absolute"] + ["relative"] * len(shap_active) + ["total"],
+        x=["Base Rate"] + shap_active["label"].tolist() + ["This Prediction"],
+        y=[shap_base] + shap_active["shap_value"].tolist() + [0],
+        connector=dict(line=dict(color=CARD_BORDER)),
+        increasing=dict(marker=dict(color=PRIMARY)),
+        decreasing=dict(marker=dict(color=ERROR)),
+        totals=dict(marker=dict(color=SUCCESS)),
+        text=[f"{shap_base:+.2f}"] + [f"{v:+.2f}" for v in shap_active["shap_value"]] + [f"{logit:.2f}"],
+        textposition="outside",
+    ))
+    waterfall.update_layout(yaxis_title="Log-odds of survival", showlegend=False)
+    waterfall.update_yaxes(range=[y_min - pad, y_max + pad])
+    st.plotly_chart(style_fig(waterfall, height=420), use_container_width=True)
+    st.caption(
+        f"Base rate {shap_base:+.2f} log-odds, ending at {logit:.2f} log-odds for this "
+        f"passenger — a predicted survival probability of {probability:.1%}."
+    )
+
+    # ============================================================
+    # 5. Counterfactual Decision Explorer
     # ============================================================
     st.write("")
     st.subheader("Counterfactual Decision Explorer")
@@ -282,7 +338,7 @@ if submitted:
         )
 
     # ============================================================
-    # 5. Prediction Sensitivity
+    # 6. Prediction Sensitivity
     # ============================================================
     st.write("")
     st.subheader("Prediction Sensitivity")
@@ -296,7 +352,7 @@ if submitted:
     st.caption("Impact is the largest probability change observed for each feature during counterfactual analysis.")
 
     # ============================================================
-    # 6. Similar Historical Passengers
+    # 7. Similar Historical Passengers
     # ============================================================
     st.write("")
     st.subheader("Similar Historical Passengers")
@@ -326,7 +382,7 @@ if submitted:
                 )
 
     # ============================================================
-    # 7. Prediction Stability
+    # 8. Prediction Stability
     # ============================================================
     st.write("")
     st.subheader("Prediction Stability")
@@ -347,7 +403,7 @@ if submitted:
     )
 
     # ============================================================
-    # 8. Decision Summary
+    # 9. Decision Summary
     # ============================================================
     st.write("")
     st.subheader("Decision Summary")

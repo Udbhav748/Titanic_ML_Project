@@ -1,7 +1,8 @@
 """Integration: FastAPI request/response contract, using TestClient against
-the real app (no mocks). Tests the currently deployed /predict path
-(model.pkl, the v1 Random Forest) — /v2/predict does not exist yet
-(Stage 6 cutover is planned, not done)."""
+the real app (no mocks). Tests /predict — model_v2.pkl, the Logistic
+Regression selected in Stage 4/5 and shown throughout the dashboard as the
+production model, served through the 8-feature schema in
+artifacts/feature_schema.json."""
 import pytest
 from fastapi.testclient import TestClient
 
@@ -21,6 +22,8 @@ def test_health_endpoint_reports_model_loaded():
     body = response.json()
     assert body["model_loaded"] is True
     assert body["status"] == "ok"
+    assert body["model_version"] == "2.0.0"
+    assert body["schema_version"] == "2.0.0"
 
 
 def test_predict_valid_payload_returns_200():
@@ -34,6 +37,7 @@ def test_predict_response_schema():
     assert "survival_probability" in response
     assert isinstance(response["survived"], bool)
     assert 0.0 <= response["survival_probability"] <= 1.0
+    assert response["model_version"] == "2.0.0"
 
 
 @pytest.mark.parametrize("missing_field", ["pclass", "sex", "age", "sibsp", "parch", "fare"])

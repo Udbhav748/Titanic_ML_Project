@@ -110,6 +110,87 @@ def get_transformed_train_matrix() -> np.ndarray:
     return np.asarray(matrix)
 
 
+def _vectorized_auc(yt: np.ndarray, yp: np.ndarray) -> np.ndarray:
+    """ROC-AUC per row of two (n_bootstrap, n) matrices, via the rank-sum
+    (Mann-Whitney U) identity — equivalent to sklearn.roc_auc_score but
+    computed for every resample in one vectorized pass instead of one
+    Python-level call per resample."""
+    order = np.argsort(yp, axis=1)
+    ranks = np.empty_like(order, dtype=float)
+    row_idx = np.arange(yp.shape[0])[:, None]
+    ranks[row_idx, order] = np.arange(1, yp.shape[1] + 1)
+    n_pos = yt.sum(axis=1)
+    n_neg = yt.shape[1] - n_pos
+    sum_ranks_pos = (ranks * yt).sum(axis=1)
+    return (sum_ranks_pos - n_pos * (n_pos + 1) / 2) / (n_pos * n_neg)
+
+
+@st.cache_data
+def get_bootstrap_ci(n_bootstrap: int = 1000, ci: float = 0.95) -> dict:
+    """Percentile bootstrap on each model's held-out test predictions —
+    quantifies exactly how much sampling noise a 179-row test set produces,
+    instead of just asserting the set is small. The same resample indices
+    are reused across every model (all four share identical test rows —
+    see analysis/stage4_model_comparison.py), so this is a paired bootstrap,
+    not four independent ones. Fully vectorized: every resample for every
+    metric is computed in one array pass rather than one sklearn call per
+    resample, which is what makes 1,000 resamples x 4 models tractable
+    inside a Streamlit page load."""
+    comparison = load_comparison_curves()
+    names = list(comparison.keys())
+    n = len(comparison[names[0]]["y_test"])
+    rng = np.random.default_rng(42)
+    idx_matrix = rng.integers(0, n, size=(n_bootstrap, n))
+    alpha = (1 - ci) / 2 * 100
+
+    result = {}
+    for name in names:
+        y_test = np.asarray(comparison[name]["y_test"])
+        y_proba = np.asarray(comparison[name]["y_proba"])
+        yt = y_test[idx_matrix]
+        yp = y_proba[idx_matrix]
+        pred = (yp >= 0.5).astype(int)
+
+        tp = ((pred == 1) & (yt == 1)).sum(axis=1)
+        fp = ((pred == 1) & (yt == 0)).sum(axis=1)
+        fn = ((pred == 0) & (yt == 1)).sum(axis=1)
+        tn = ((pred == 0) & (yt == 0)).sum(axis=1)
+
+        valid = (yt.min(axis=1) != yt.max(axis=1))  # degenerate resample — AUC undefined
+        accuracy = (tp + tn) / yt.shape[1]
+        precision = np.divide(tp, tp + fp, out=np.zeros_like(tp, dtype=float), where=(tp + fp) > 0)
+        recall = np.divide(tp, tp + fn, out=np.zeros_like(tp, dtype=float), where=(tp + fn) > 0)
+        f1 = np.divide(
+            2 * precision * recall, precision + recall,
+            out=np.zeros_like(precision), where=(precision + recall) > 0,
+        )
+        auc = _vectorized_auc(yt[valid], yp[valid])
+
+        metrics = {
+            "accuracy": accuracy[valid], "precision": precision[valid],
+            "recall": recall[valid], "f1": f1[valid], "roc_auc": auc,
+        }
+        result[name] = {
+            k: (float(np.percentile(v, alpha)), float(np.percentile(v, 100 - alpha)))
+            for k, v in metrics.items()
+        }
+    return result
+
+
+@st.cache_resource
+def get_shap_explainer():
+    """LinearExplainer for the production model's classifier, using the full
+    transformed training set as background — SHAP values are exact for a
+    linear model given this background distribution (they sum exactly to
+    the model's own decision_function, not an approximation)."""
+    import shap
+
+    model = load_model_v2()
+    background = get_transformed_train_matrix()
+    masker = shap.maskers.Independent(background, max_samples=len(background))
+    return shap.LinearExplainer(model.named_steps["classifier"], masker)
+
+
 @st.cache_data
 def get_logit_strength_cutoffs() -> tuple:
     """Tertile cutoffs of |log-odds| on the held-out test set — buckets a
@@ -140,6 +221,65 @@ def get_population_reference() -> dict:
         "family_median": float(family_size.median()),
         "family_max": int(family_size.max()),
     }
+
+
+@st.cache_data
+def get_subgroup_performance() -> dict:
+    """Model accuracy/precision/recall/F1 broken out by Sex and by Pclass —
+    whether the model is equally reliable across subgroups, not just accurate
+    on average. Aggregate metrics can hide a model that works well for one
+    group and poorly for another."""
+    X_test, y_test, y_pred, _, _ = evaluate_v2_on_test()
+    frame = X_test.copy()
+    frame["y_true"] = y_test.values
+    frame["y_pred"] = y_pred
+
+    def _by(col: str) -> pd.DataFrame:
+        rows = []
+        for value, g in frame.groupby(col):
+            rows.append({
+                col: value,
+                "n": len(g),
+                "accuracy": accuracy_score(g["y_true"], g["y_pred"]),
+                "precision": precision_score(g["y_true"], g["y_pred"], zero_division=0),
+                "recall": recall_score(g["y_true"], g["y_pred"], zero_division=0),
+                "f1": f1_score(g["y_true"], g["y_pred"], zero_division=0),
+            })
+        return pd.DataFrame(rows)
+
+    return {"sex": _by("Sex"), "pclass": _by("Pclass")}
+
+
+@st.cache_data
+def get_error_composition() -> dict:
+    """False positives and false negatives on the test set, with the full
+    feature row attached — which passengers the model got wrong, and what
+    subgroups (Sex, Pclass, Title) its mistakes cluster in."""
+    X_test, y_test, y_pred, y_proba, _ = evaluate_v2_on_test()
+    frame = X_test.copy()
+    frame["Actual"] = y_test.values
+    frame["Predicted"] = y_pred
+    frame["Probability"] = y_proba
+    fp = frame[(frame["Actual"] == 0) & (frame["Predicted"] == 1)]
+    fn = frame[(frame["Actual"] == 1) & (frame["Predicted"] == 0)]
+    return {"false_positives": fp, "false_negatives": fn}
+
+
+@st.cache_data
+def get_misclassified_examples(top_n: int = 8) -> pd.DataFrame:
+    """The test set's most confidently wrong predictions, ranked by how far
+    the model's probability missed the true outcome — the cases worth
+    inspecting individually, not just counting."""
+    X_test, y_test, y_pred, y_proba, _ = evaluate_v2_on_test()
+    frame = X_test.copy()
+    frame["Actual"] = y_test.values
+    frame["Predicted"] = y_pred
+    frame["Probability"] = y_proba
+    wrong = frame[frame["Actual"] != frame["Predicted"]].copy()
+    wrong["miss_margin"] = np.where(
+        wrong["Actual"] == 1, 1 - wrong["Probability"], wrong["Probability"]
+    )
+    return wrong.sort_values("miss_margin", ascending=False).head(top_n).drop(columns="miss_margin")
 
 
 @st.cache_data

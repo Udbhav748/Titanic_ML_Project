@@ -168,6 +168,16 @@ CSS = f"""
     [data-testid="stHeaderActionElements"] {{
         display: none !important;
     }}
+
+    /* Pages with many tabs (e.g. Model Performance's 9) overflow the default
+       single-row, horizontal-scroll tab bar with no visible scroll cue — the
+       last tab or two end up clipped off-screen. Wrap onto a second row
+       instead so every tab stays visible and clickable. */
+    div[data-baseweb="tab-list"] {{
+        flex-wrap: wrap !important;
+        overflow-x: visible !important;
+        row-gap: 0.25rem;
+    }}
 </style>
 """
 

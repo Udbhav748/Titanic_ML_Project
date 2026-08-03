@@ -35,8 +35,12 @@ class PassengerInput(BaseModel):
 class PredictionResponse(BaseModel):
     survived: bool
     survival_probability: float
+    model_version: str
 
 
 class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
+    model_version: str | None = None
+    preprocessing_version: str | None = None
+    schema_version: str | None = None

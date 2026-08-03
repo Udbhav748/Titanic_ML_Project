@@ -4,6 +4,19 @@ Audience: an engineer deploying the Stage 4/5 model (Logistic Regression, 8
 features) to replace the current production model (Random Forest, 11
 features) without breaking `api/main.py`'s existing consumers.
 
+> **Implementation note (post-migration):** the phased `/predict` +
+> `/v2/predict` rollout below was the original design and was fully built and
+> tested. It was then deliberately simplified to a single `/predict` endpoint
+> serving the Logistic Regression directly — this project has no real
+> external consumers of `/predict` to protect during a gradual cutover, so
+> the added versioning surface (two endpoints, dual health-check fields,
+> `model_v1.pkl` still shipped in the image) wasn't earning its complexity.
+> `model_v1.pkl` is kept in the repo for the dashboard's model comparison
+> views, just no longer loaded or served by the API. The design below is
+> preserved as-is — it's the correct pattern for a service with real
+> production traffic, and the reasoning is worth keeping even though this
+> project ultimately didn't need it.
+
 ## 1. Architecture Overview
 
 **Current (as deployed today):**
@@ -262,18 +275,23 @@ post-deploy:
 
 ## 7. Production Checklist
 
-- [ ] `model_v1.pkl` frozen from current `model.pkl` before any overwrite
-- [ ] `model_v2.pkl` trained and matches Stage 4/5's reported metrics exactly
-- [ ] `artifacts/feature_schema.json` — `schema_version` bumped to `2.0.0`
-- [ ] `artifacts/preprocessing_metadata.json` — `model_version` set to `2.0.0`
-- [ ] Startup version-pairing assertion added and tested against a deliberately mismatched pair
-- [ ] `/v2/predict` added; `/predict` untouched and still serving `model_v1.pkl`
-- [ ] `PredictionResponse.model_version` field added (additive, non-breaking)
-- [ ] `HealthResponse` extended with version fields
-- [ ] Dockerfile ships both `model_v1.pkl` and `model_v2.pkl` plus `artifacts/`
-- [ ] New image built and tagged (`titanic-api:v2`)
-- [ ] Pre-cutover check passed on spare port (§5, step 3–4)
-- [ ] `/health` verified on the real port after cutover
+As actually shipped (single `/predict` endpoint — see the implementation
+note at the top of this document):
+
+- [x] `model_v2.pkl` trained and matches Stage 4/5's reported metrics exactly
+- [x] `artifacts/feature_schema.json` — `schema_version` bumped to `2.0.0`
+- [x] `artifacts/preprocessing_metadata.json` — `model_version` set to `2.0.0`
+- [x] Startup version-pairing assertion added (`api/main.py`) — not yet tested against a
+      deliberately mismatched pair
+- [x] `/predict` repointed at `model_v2.pkl`; `model_v1.pkl` no longer loaded by the API
+- [x] `PredictionResponse.model_version` field added (additive, non-breaking)
+- [x] `HealthResponse` extended with version fields
+- [x] Dockerfile ships `model_v2.pkl` plus `artifacts/`
+- [ ] New image built and tagged
+- [ ] `/health` verified on the real port after redeploying to EC2
 - [ ] Prediction parity checked against Stage 4/5 test-set numbers
-- [ ] Rollback procedure executed once in staging, confirmed working, before relying on it in production
-- [ ] Migration timeline (§4) communicated to any external `/predict` consumers
+
+The API code and local verification (test suite, live `/health` + `/predict`
+checks) are done. The remaining unchecked items are EC2 deployment steps —
+build the image, redeploy on the live instance, verify — not yet executed
+against the running instance.

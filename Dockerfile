@@ -9,7 +9,8 @@ COPY requirements-api.txt .
 RUN pip install --no-cache-dir -r requirements-api.txt
 
 COPY api/ ./api/
-COPY model/model.pkl ./model/model.pkl
+COPY model/model_v2.pkl ./model/model_v2.pkl
+COPY artifacts/ ./artifacts/
 
 RUN useradd --create-home appuser
 USER appuser

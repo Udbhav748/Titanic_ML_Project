@@ -55,7 +55,7 @@ st.divider()
 st.subheader("Project Snapshot")
 st.markdown(
     bold_card_css(
-        ["Dataset", "Models Compared", "Production Algorithm", "Accuracy",
+        ["Dataset", "Models Compared", "Selected Model", "Accuracy",
          "ROC-AUC", "Features Used", "API", "Deployment"],
         "metric",
     ),
@@ -68,7 +68,7 @@ with row1[0]:
 with row1[1]:
     metric_card("Models Compared", str(len(results)))
 with row1[2]:
-    metric_card("Production Algorithm", "Logistic Regression")
+    metric_card("Selected Model", "Logistic Regression")
 with row1[3]:
     metric_card("Accuracy", f"{metrics['accuracy']:.1%}")
 with row2[0]:

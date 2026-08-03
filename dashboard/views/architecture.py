@@ -6,19 +6,14 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from theme import PRIMARY, QUATERNARY, SUCCESS, TERTIARY, TEXT_PRIMARY, WARNING, highlight_card, page_header
+from theme import PRIMARY, QUATERNARY, SUCCESS, TERTIARY, WARNING, highlight_card, page_header
 
 page_header("Project Architecture", "How a prediction moves through the system.")
 
 # Five-color rotation reused across boxes, chips, and Pipeline Components —
-# same box model everywhere (size, padding, radius, shadow untouched).
-PALETTE = [
-    ("#EFF6FF", PRIMARY),
-    ("#ECFDF5", SUCCESS),
-    ("#FFFBEB", WARNING),
-    ("#F5F3FF", QUATERNARY),
-    ("#ECFEFF", TERTIARY),
-]
+# solid, saturated fills instead of pastel tints, same box model everywhere
+# (size, padding, radius untouched).
+PALETTE = [PRIMARY, SUCCESS, WARNING, QUATERNARY, TERTIARY]
 
 st.markdown(
     f"""
@@ -27,11 +22,10 @@ st.markdown(
             border-radius: 8px;
             padding: 0.5rem 1rem;
             text-align: center;
-            font-weight: 500;
-            color: {TEXT_PRIMARY};
+            font-weight: 700;
+            color: white;
             max-width: 420px;
             margin: 0 auto;
-            box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
         }}
         .arch-arrow {{
             text-align: center;
@@ -61,9 +55,10 @@ st.markdown(
 
 def render_steps(steps: list[str], start: int) -> int:
     for i, step in enumerate(steps):
-        bg, border = PALETTE[(start + i) % len(PALETTE)]
+        accent = PALETTE[(start + i) % len(PALETTE)]
         st.markdown(
-            f"<div class='arch-step' style='background-color:{bg}; border:1px solid {border};'>{step}</div>",
+            f"<div class='arch-step' style='background-color:{accent}; "
+            f"box-shadow:0 3px 10px {accent}66;'>{step}</div>",
             unsafe_allow_html=True,
         )
         if i < len(steps) - 1:
@@ -73,13 +68,14 @@ def render_steps(steps: list[str], start: int) -> int:
 
 def render_step_with_subitems(title: str, subitems: list[str], color_index: int) -> None:
     """A flow step whose box is annotated with the smaller capabilities inside it."""
-    bg, border = PALETTE[color_index % len(PALETTE)]
+    accent = PALETTE[color_index % len(PALETTE)]
     st.markdown(
-        f"<div class='arch-step' style='background-color:{bg}; border:1px solid {border};'>{title}</div>",
+        f"<div class='arch-step' style='background-color:{accent}; "
+        f"box-shadow:0 3px 10px {accent}66;'>{title}</div>",
         unsafe_allow_html=True,
     )
     chips = "".join(
-        f"<span class='arch-chip' style='background-color:white; border:1px solid {border}66; color:{border};'>{s}</span>"
+        f"<span class='arch-chip' style='background-color:white; border:1.5px solid {accent}; color:{accent};'>{s}</span>"
         for s in subitems
     )
     st.markdown(f"<div style='text-align:center; margin-top:0.3rem;'>{chips}</div>", unsafe_allow_html=True)

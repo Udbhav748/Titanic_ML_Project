@@ -4,7 +4,7 @@ An end-to-end machine learning system that predicts Titanic passenger survival, 
 
 <p align="center">
 <img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white" alt="Python">
-<img src="https://img.shields.io/badge/scikit--learn-1.5-F7931E?logo=scikitlearn&logoColor=white" alt="scikit-learn">
+<img src="https://img.shields.io/badge/scikit--learn-1.9-F7931E?logo=scikitlearn&logoColor=white" alt="scikit-learn">
 <img src="https://img.shields.io/badge/FastAPI-Production-009688?logo=fastapi&logoColor=white" alt="FastAPI">
 <img src="https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?logo=streamlit&logoColor=white" alt="Streamlit">
 <img src="https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white" alt="Docker">
@@ -41,8 +41,11 @@ The final application is a FastAPI service that serves predictions from a traine
 - **Controlled model comparison** — four models trained and scored under one identical protocol
 - **Model evaluation** — ROC/AUC, confusion matrix, calibration, and permutation importance
 - **Interactive Streamlit dashboard** — six pages covering data, analysis, model performance, and live prediction
-- **Live prediction with explanations** — every prediction decomposes into signed feature contributions, no black box
-- **FastAPI service** — validated request/response contracts, backward-compatible across a model swap
+- **Statistical significance testing, live** — chi-square, Cramer's V, and point-biserial correlation computed on the current dataset, not pasted as static numbers
+- **Fairness and error analysis** — model performance broken down by Sex and Passenger Class, plus a live view of the test set's most confidently wrong predictions
+- **Bootstrap confidence intervals** — every model comparison metric ships with a 95% CI (1,000 resamples), not just a point estimate
+- **Live prediction with dual explanations** — every prediction decomposes into signed feature contributions and a SHAP waterfall, no black box
+- **FastAPI service** — validated request/response contracts
 - **Docker containerization** — a single versioned image for the API
 - **AWS EC2 deployment** — the containerized API and dashboard run on a live instance
 - **Automated testing** — 76 tests across unit, integration, and end-to-end layers
@@ -159,7 +162,9 @@ Full methodology: [`reports/stage4_model_comparison.md`](reports/stage4_model_co
 - **Confusion matrix** — on the held-out test set, the model produces more false positives than false negatives, consistent with the balanced class weighting used during training.
 - **ROC curve** — all four models cluster closely (AUC 0.839 to 0.865); the gap alone would not have been a decisive signal, which is why multiple metrics were used together.
 - **Calibration** — predicted probabilities track observed outcomes closely at the extremes, with mild overconfidence in the 0.3–0.5 range. Not significant enough to justify recalibrating on a 179-row test set.
+- **Statistical uncertainty, quantified** — a 95% bootstrap confidence interval on Logistic Regression's F1 score is [0.711, 0.857], wider than the gap to every other model. The 179-row test set is too small to call any of these models a decisive winner on point estimates alone.
 - **Feature importance** — `Sex` and `Title` dominate both the coefficient view and permutation importance. `Pclass` ranks lower on permutation importance because its signal overlaps with `Fare` and `HasCabin`.
+- **Fairness by subgroup** — recall is 100% for female passengers but only 50% for male passengers on the test set. Subgroup sample sizes are small enough that this isn't treated as confirmed bias, but it's surfaced rather than hidden behind an aggregate accuracy number.
 - **Production readiness** — the model and preprocessing pipeline are loaded once at process startup, never refit per request, and both are versioned artifacts checked for compatibility in CI.
 
 ## Technology Stack
@@ -167,7 +172,7 @@ Full methodology: [`reports/stage4_model_comparison.md`](reports/stage4_model_co
 | Category | Technology |
 |---|---|
 | Programming | Python 3.11 |
-| Machine Learning | scikit-learn, pandas, NumPy, SciPy, statsmodels |
+| Machine Learning | scikit-learn, pandas, NumPy, SciPy, statsmodels, SHAP |
 | Visualization | Plotly |
 | Backend | FastAPI, Pydantic, Uvicorn |
 | Dashboard | Streamlit |
@@ -258,7 +263,7 @@ docker run -d -p 8000:8000 --name titanic-api-container titanic-api
 
 ## API Usage
 
-**Request** — `POST /predict`
+**Request** — `POST /predict` — served by the Logistic Regression, 8-feature schema (`artifacts/feature_schema.json`), the model shown throughout this dashboard.
 
 ```json
 {
@@ -279,7 +284,8 @@ docker run -d -p 8000:8000 --name titanic-api-container titanic-api
 ```json
 {
   "survived": true,
-  "survival_probability": 0.9867
+  "survival_probability": 0.9917,
+  "model_version": "2.0.0"
 }
 ```
 

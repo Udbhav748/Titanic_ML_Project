@@ -11,3 +11,4 @@ uvicorn[standard]
 pydantic
 streamlit
 plotly
+shap

@@ -88,6 +88,9 @@ with chart_col:
     )
     fig.update_traces(marker_color=bar_colors, textposition="outside")
     fig.update_yaxes(autorange="reversed")
+    # Outside text labels sit past the bar end — without headroom, the
+    # longest bar's label (Cabin, ~77%) gets clipped by the plot's right edge.
+    fig.update_xaxes(range=[0, missing_pct.max() * 1.15])
     st.plotly_chart(style_fig(fig, height=380), use_container_width=True)
 with summary_col:
     n_incomplete = int(has_missing.sum())
@@ -146,6 +149,9 @@ with st.container(border=True, key="card-target-dist"):
         fig.update_yaxes(
             showticklabels=False, title="Passengers", showline=True, linecolor=CARD_BORDER,
             showgrid=True, gridcolor="#F1F5F9", zeroline=False,
+            # Headroom for the outside count label above the taller bar —
+            # without it, the label gets clipped by the plot's top edge.
+            range=[0, counts.values.max() * 1.2],
         )
         st.plotly_chart(fig, use_container_width=True)
 
